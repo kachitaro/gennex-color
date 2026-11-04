@@ -48,6 +48,26 @@ function pivotL(h: number, kappa: number) {
   return lo;
 }
 
+/**
+ * Hover (step 10). Normally just L10 with ~equal chroma. Within +-0.04 L of the pivot the L move shrinks to 0, so the
+ * hover differs by CHROMA instead, at the luminance the plain move would have had: the foreground contrast on step 10
+ * is unchanged, and the dE to step 9 stays >= 0.02 at every seed (T4).
+ */
+function hoverStep(L9: number, L10: number, C9: number, h: number): Oklch {
+  const base = ok(L10, Math.min(C9 * 0.99, 0.98 * maxChroma(L10, h)), h);
+  const w = 1 - Math.abs(L10 - L9) / 0.03; // 1 at the pivot, 0 once the L move is the full 0.03
+  if (w <= 0) return base;
+  const c = base.c - Math.min(0.045, 0.6 * base.c) * w;
+  const y = luminance(base);
+  let lo = L10 - 0.12, hi = L10 + 0.12;
+  for (let i = 0; i < 24; i++) {
+    const m = (lo + hi) / 2;
+    luminance(ok(m, Math.min(c, 0.98 * maxChroma(m, h)), h)) < y ? (lo = m) : (hi = m);
+  }
+  const l = (lo + hi) / 2;
+  return ok(l, Math.min(c, 0.98 * maxChroma(l, h)), h);
+}
+
 const T11 = 4.55, T12 = 7.1, TFG = 4.55; // solve a hair above the 4.5 / 7 test floors (8-bit rounding)
 
 export function generateScale({ hue, mode, kappa = 0.85 }: ScaleOptions): Scale {
@@ -55,12 +75,12 @@ export function generateScale({ hue, mode, kappa = 0.85 }: ScaleOptions): Scale 
   const dark = mode === "dark";
   const L9 = anchorL(h);
   const C9 = kappa * maxChroma(L9, h);
-  // delta is 0 at the pivot, so hover direction flips continuously with the seed (A5); shrinks inside +-0.04 L of it.
+  // Hover moves AWAY from the pivot (white-text side: darker, black-text side: lighter); the move is 0 at the pivot.
   const L10 = L9 + (-0.03 + 0.06 * smooth((L9 - pivotL(h, kappa)) / 0.08 + 0.5));
   const steps: Oklch[] = [];
   for (let i = 0; i < 8; i++) steps.push(ok(L[mode][i], Math.min(CR[mode][i] * C9, 0.98 * maxChroma(L[mode][i], h)), h));
   steps.push(ok(L9, C9, h));
-  steps.push(ok(L10, Math.min(C9 * 0.99, 0.98 * maxChroma(L10, h)), h));
+  steps.push(hoverStep(L9, L10, C9, h));
   const bgs = [toHex(steps[0]), toHex(steps[1]), toHex(steps[2])];
   const solveText = (start: number, target: number, ratio: number) => {
     let l = start;

@@ -133,3 +133,13 @@ describe("R1 proximity to Radix 3.0.0", () => {
     }
   });
 });
+
+describe("T4 hover step is visibly different at EVERY hue", () => {
+  test("dE(s9, s10) >= 0.02 every 0.5 degrees, all kappas, both modes", () => {
+    expect(sweep(seeds(0.5), [0.35, 0.5, 0.6, 0.7, 0.85], (h, m, k) => {
+      const s = gen(h, m, k);
+      const d = dE(s.hex[8], s.hex[9]);
+      return d < 0.02 ? `dE=${d.toFixed(4)}` : null;
+    })).toEqual([]);
+  });
+});

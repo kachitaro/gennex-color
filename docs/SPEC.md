@@ -300,7 +300,7 @@ Mọi test quét: **12 hue lõi × 3 neutral × 2 mode** (36 tổ hợp × 2) + 
 | T1 | Cặp chữ: `foreground` trên background/card/popover/muted/secondary/accent/sidebar ≥ 7; `muted-foreground` trên cùng danh sách (trừ foreground-only) ≥ 4.5; `X-foreground` trên `X` và `X-hover` ≥ 4.5 cho primary, secondary, accent, destructive, success, warning, info, sidebar-primary | 7 / 4.5 | — |
 | T2 | Chữ trạng thái: `X-text` trên background, card, `X-subtle` ≥ 4.5; `X-border` trên background ≥ 1.2:1 (nhận diện, không phải 1.4.11) | 4.5 / 1.2 | — |
 | T3 | Non-text 3:1 (WCAG 1.4.11): `ring` trên background và card; `input` trên background và card; mỗi `chart-n` trên card. `border` trang trí: miễn, chỉ kiểm ≥ 1.2:1 | 3 | shadcn default: 1.26 / 2.59 → ta bắt buộc tính lại (D4) |
-| T4 | Trạng thái phân biệt được: `primary` vs `primary-hover`, `secondary` vs hover, `accent` vs `card`. Áp cho 12 hue lõi (δ = ±0.03 L); seed trong dải chuyển (δ→0, O1) chỉ cần CR foreground trên hover ≥ 4.5 | ΔE_OK ≥ 0.02 | chưa đo riêng |
+| T4 | Trạng thái phân biệt được: `primary` vs `primary-hover` (s9 vs s10) ở **mọi** hue (bước 0.5°) và κ ∈ {0.35, 0.5, 0.6, 0.7, 0.85}, cả hai mode. `secondary` vs hover, `accent` vs `card` thuộc lớp semantic (Phase sau) | ΔE_OK ≥ 0.02 | min 0.0216 (light, h=243°, κ=0.35) |
 | T5 | Không dùng đen/trắng tuyệt đối cho surface/text token (`L ≥ 0.995` hoặc `L ≤ 0.12` cho `background`/`foreground`/`card`/`popover` bị cấm). Ngoại lệ: foreground rơi về thuần trong vùng chết (§3.2). | — | devglow giữ tinh thần này |
 | T6 | Dark không phải đảo: (a) `L(background) < L(card) ≤ L(popover)` ở dark; (b) T1–T3 đạt độc lập cho dark, không suy từ light | — | — |
 | H1 | 12 hue lõi: khoảng cách hue min | ≥ 22° | 23° |
@@ -434,7 +434,7 @@ Quyết định nhỏ tôi đã tự chọn (đánh dấu để bạn soát): hu
 
 | # | Mục | Chi tiết | Xử lý |
 |---|---|---|---|
-| O1 | **Vùng chết foreground ở biên chữ trắng/đen** | **Đã sửa ở Phase 1** (`src/scale.ts`). Nguyên nhân thật: s9 và s10 nằm hai phía ngưỡng đổi chữ (rớt ở 30–34° và 246–250°, không chỉ 3 seed). Sửa: pivot luminance Y = √(0.05·1.05) − 0.05 ≈ 0.179 (chữ trắng và đen thuần đều ≈ 4.58:1); hướng hover δ đổi dấu liên tục quanh L pivot của từng hue. Hệ quả còn lại: ở hue 28–34° và 243–250° hover ≈ không đổi (ΔE < 0.02), và foreground là trắng/đen thuần ở 30–36°, 240–247° | T4 chỉ ép cho 12 hue lõi; seed trong hai dải này chấp nhận hover yếu |
+| O1 | **Vùng chết foreground ở biên chữ trắng/đen** | **Đã sửa** (`src/scale.ts`). Nguyên nhân thật: s9 và s10 nằm hai phía ngưỡng đổi chữ (rớt ở 30–34° và 246–250°, không chỉ 3 seed). Sửa: pivot luminance Y = √(0.05·1.05) − 0.05 ≈ 0.179 (chữ trắng và đen thuần đều ≈ 4.58:1); hướng hover δ đổi dấu liên tục quanh L pivot của từng hue. Trong ±0.04 L quanh pivot, hover chuyển sang khác biệt bằng **chroma** ở cùng luminance (iso-Y) nên CR của foreground không đổi và T4 giữ ở mọi hue. Còn lại: foreground là trắng/đen thuần ở 30–36° và 240.5–247° (κ=0.85) | Biên mỏng: hover ΔE min 0.0216 (ngưỡng 0.02), độ liên tục max 0.018 ΔE/độ (ngưỡng 0.02) — đổi hằng số phải chạy lại A5 và T4 |
 | O2 | Step 11–12 của yellow/amber ô-liu | Không drift hue (§4.5) | Duyệt mắt swatch; nếu xấu thêm bảng drift thưa |
 | O3 | Hiển thị P3 và hành vi `oklch()` ngoài gamut | Chưa test trình duyệt | Phase 1: kiểm Chrome/Safari/Firefox |
 | O4 | Alpha P3 | Chưa prototype | Chỉ làm nếu D6 mở rộng |
