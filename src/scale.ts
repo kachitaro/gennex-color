@@ -70,7 +70,7 @@ function hoverStep(L9: number, L10: number, C9: number, h: number): Oklch {
 
 const T11 = 4.55, T12 = 7.1, TFG = 4.55; // solve a hair above the 4.5 / 7 test floors (8-bit rounding)
 
-export function generateScale({ hue, mode, kappa = 0.85 }: ScaleOptions): Scale {
+export function generateScaleUncached({ hue, mode, kappa = 0.85 }: ScaleOptions): Scale {
   const h = ((hue % 360) + 360) % 360;
   const dark = mode === "dark";
   const L9 = anchorL(h);
@@ -108,3 +108,24 @@ export function foregroundFor(h: number, bgs: string[]): { hex: string; ok: bool
   const pass = scored.filter((s) => s.cr >= TFG).sort((a, b) => Number(b.tint) - Number(a.tint) || b.cr - a.cr);
   return pass[0] ? { hex: pass[0].x, ok: true } : { hex: scored.sort((a, b) => b.cr - a.cr)[0].x, ok: false };
 }
+
+/** Number of scales kept by `generateScale`. A theme uses ~30 distinct (hue, mode) pairs; a slider adds 2 per hue. */
+export const SCALE_CACHE_LIMIT = 512;
+const cache = new Map<string, Scale>();
+const freeze = (s: Scale): Scale => { s.steps.forEach(Object.freeze); Object.freeze(s.steps); Object.freeze(s.hex); return Object.freeze(s); };
+
+/**
+ * Scale for a seed hue. Results are cached by (normalized hue, kappa, mode) in a small LRU and returned frozen, so the
+ * same object is shared between callers: treat it as read-only.
+ */
+export function generateScale(o: ScaleOptions): Scale {
+  const key = `${((o.hue % 360) + 360) % 360}|${o.kappa ?? 0.85}|${o.mode}`;
+  const hit = cache.get(key);
+  if (hit) { cache.delete(key); cache.set(key, hit); return hit; } // re-insert: most recently used goes last
+  const s = freeze(generateScaleUncached(o));
+  cache.set(key, s);
+  if (cache.size > SCALE_CACHE_LIMIT) cache.delete(cache.keys().next().value!);
+  return s;
+}
+export const clearScaleCache = () => cache.clear();
+export const scaleCacheSize = () => cache.size;

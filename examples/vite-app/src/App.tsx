@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input"
 import { ThemeSlider } from "@/components/theme-slider"
 
 export function App() {
+  // the slider themes only the #demo-block below (applyThemeToRoot(theme, element)), not <html>
   return (
-    <div className="flex min-h-svh items-center justify-center p-6">
+    <div id="demo-block" className="flex min-h-svh items-center justify-center bg-background p-6 text-foreground">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>gennex-color</CardTitle>

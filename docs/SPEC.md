@@ -536,7 +536,20 @@ Chi phí: `buildTheme` ≈ **5.3 ms** mỗi lần (360 hue, neutral `auto`, cả
 
 **Vượt 16 ms ở 4×** (và p95/max chạm 14–18 ms ở 1×). `buildTheme` là 75–78% tổng. Trong Bun nó 5.2 ms, trong đó ~30 lần `generateScale` (0.13 ms/lần) ≈ 3.9 ms; **28 trong 30 lần dùng hue không đổi khi kéo thanh trượt** (4 hue trạng thái cố định ×2 mode, ~10 hue lõi của chart ×2 mode, chỉ brand ×2 mode là đổi).
 
-Đề xuất giảm (chưa làm, ước lượng, cần đo lại sau khi sửa):
+**Đã làm (đề xuất 1 và 4)**: `generateScale` có cache LRU 512 mục theo `(hue chuẩn hóa, kappa, mode)`, trả object đóng băng (dùng chung, chỉ đọc); `generateScaleUncached` giữ để so sánh. Example áp theme vào khối `#demo-block` bằng `applyThemeToRoot(theme, element)` thay vì `:root`. Đo lại cùng phương pháp:
+
+| Cấu hình | CPU | Tổng/lần (median / p95 / max) | buildTheme | Style recalc |
+|---|---|---|---|---|
+| Trước | 1× | 9.8 / 13.6 / 18.3 ms | 7.4 ms | 2.0 ms |
+| Trước | 4× | 38.0 / 41.2 / 48.7 ms | 29.5 ms | 7.2 ms |
+| Cache (apply vào `:root`) | 1× | 4.0 / 5.0 / 8.1 ms | 1.7 ms | 2.0 ms |
+| Cache (apply vào `:root`) | 4× | **15.1** / 18.6 / 24.4 ms | 6.4 ms | 7.5 ms |
+| Cache + container | 1× | 4.0 / 4.5 / 6.3 ms | 1.7 ms | 2.0 ms |
+| Cache + container | 4× | **16.1** / 20.1 / 31.0 ms | 7.0 ms | 7.8 ms |
+
+Trong Bun `buildTheme` từ 5.2 xuống 1.1 ms (bộ test cũng nhanh hơn: 16 → 5 s). **Kết luận**: cache cho gần toàn bộ mức giảm; áp vào container **không giảm thêm** vì khối demo gần như là cả trang (style recalc không đổi; chênh 15.1 vs 16.1 là nhiễu). Ở 4× chậm median 15–16 ms nhưng p95 19–20 ms và max 24–31 ms: vẫn rớt một số frame (khoảng giữa frame p95 33 ms). Style recalc (7.5 ms ở 4×) giờ ngang `buildTheme`; giảm tiếp cần đề xuất 2/3 (phần cố định khác trong `buildTheme`, bỏ frame) hoặc trang lớn hơn mới thấy lợi ích của container.
+
+Đề xuất ban đầu (đánh dấu cái đã làm):
 1. **Cache `generateScale` theo `(hue, kappa, mode)`** (Map nhỏ, hoặc LRU vài trăm mục). Kéo thanh trượt chỉ tính 2 scale brand mỗi lần; ước lượng buildTheme còn ~25% (≈ 7.4 → ~2 ms ở 1×; ≈ 8 ms ở 4×). Tổng ở 4× khi đó ≈ 16–17 ms: sát ngưỡng, nên kết hợp 2.
 2. **Tách phần phụ thuộc brand khỏi phần cố định** trong `buildTheme`: status/chart-candidates tính một lần khi `status`/`kappa` không đổi, nhận qua đối tượng `ThemeBuilder` giữ cache (`createThemeBuilder(opts).build(hue)`); cache sống theo builder nên không có trạng thái toàn cục ẩn.
 3. **Giảm tần suất**: cập nhật cách frame khi rảnh (đo > 12 ms thì bỏ qua frame kế) hoặc `requestIdleCallback`; thanh trượt vẫn mượt vì chỉ trễ màu.

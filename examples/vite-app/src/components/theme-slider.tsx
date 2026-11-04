@@ -9,7 +9,7 @@ const initialHue = () => {
 }
 
 /**
- * One theme update, timed: build the theme, swap the CSS variables, then force the style recalculation the browser would
+ * One theme update, timed (applied to the demo block, so only that subtree is restyled): build the theme, swap the CSS variables, then force the style recalculation the browser would
  * do anyway (reading a computed style), so the number includes what the page really pays. Layout and paint are not included.
  */
 const parts = { build: 0, apply: 0, recalc: 0 }
@@ -17,9 +17,10 @@ function update(hue: number) {
   const t0 = performance.now()
   const theme = buildTheme({ hue, neutral: "auto" })
   const t1 = performance.now()
-  applyThemeToRoot(theme)
+  const target = document.getElementById("demo-block")!
+  applyThemeToRoot(theme, target)
   const t2 = performance.now()
-  getComputedStyle(document.documentElement).getPropertyValue("--primary")
+  getComputedStyle(target).getPropertyValue("--primary")
   const t3 = performance.now()
   Object.assign(parts, { build: t1 - t0, apply: t2 - t1, recalc: t3 - t2 })
   return t3 - t0

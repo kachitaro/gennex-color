@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import * as R from "@radix-ui/colors";
-import { generateScale, type Mode } from "../src/scale";
+import { SCALE_CACHE_LIMIT, clearScaleCache, generateScale, generateScaleUncached, scaleCacheSize, type Mode } from "../src/scale";
+import { buildTheme } from "../src/theme";
 import { CORE_HUES } from "../src/hues";
 import { cr, dE, hueGap, inSrgb, maxChroma, okl, seeds } from "./util";
 
@@ -141,5 +142,48 @@ describe("T4 hover step is visibly different at EVERY hue", () => {
       const d = dE(s.hex[8], s.hex[9]);
       return d < 0.02 ? `dE=${d.toFixed(4)}` : null;
     })).toEqual([]);
+  });
+});
+
+describe("generateScale cache", () => {
+  test("same inputs give the same (identical) object; hue is normalized and kappa defaults share one entry", () => {
+    clearScaleCache();
+    const a = generateScale({ hue: 40, mode: "light" });
+    expect(generateScale({ hue: 40, mode: "light", kappa: 0.85 })).toBe(a);
+    expect(generateScale({ hue: 400, mode: "light" })).toBe(a);
+    expect(generateScale({ hue: -320, mode: "light" })).toBe(a);
+    expect(generateScale({ hue: 40, mode: "dark" })).not.toBe(a);
+    expect(scaleCacheSize()).toBe(2);
+  });
+  test("cached results equal a fresh computation, before and after evictions", () => {
+    clearScaleCache();
+    const inputs = Array.from({ length: 3000 }, (_, i) => ({ hue: (i * 0.37) % 360, mode: (i % 2 ? "dark" : "light") as Mode, kappa: [0.35, 0.6, 0.85][i % 3] }));
+    for (const o of inputs) generateScale(o);
+    expect(scaleCacheSize()).toBeLessThanOrEqual(SCALE_CACHE_LIMIT);
+    for (const o of [...inputs.slice(0, 40), ...inputs.slice(-40), ...inputs.filter((_, i) => i % 97 === 0)]) expect(generateScale(o)).toEqual(generateScaleUncached(o));
+  });
+  test("the cache is bounded and keeps recently used entries (LRU)", () => {
+    clearScaleCache();
+    const first = generateScale({ hue: 1, mode: "light" });
+    for (let i = 0; i < SCALE_CACHE_LIMIT - 1; i++) generateScale({ hue: 2 + i * 0.01, mode: "light" });
+    generateScale({ hue: 1, mode: "light" }); // touch: becomes most recent
+    generateScale({ hue: 359, mode: "dark" }); // forces one eviction: the oldest untouched entry, not `first`
+    expect(scaleCacheSize()).toBe(SCALE_CACHE_LIMIT);
+    expect(generateScale({ hue: 1, mode: "light" })).toBe(first);
+  });
+  test("cached scales are read-only so one caller cannot corrupt another", () => {
+    const s = generateScale({ hue: 200, mode: "dark" });
+    expect(() => { (s.hex as string[])[0] = "#000000"; }).toThrow();
+    expect(() => { (s.steps[0] as { l: number }).l = 0; }).toThrow();
+    expect(Object.isFrozen(s)).toBe(true);
+  });
+  test("buildTheme gives the same tokens with a cold and a warm cache", () => {
+    for (const o of [{ hue: 40 }, { hue: 255, neutral: "auto" as const, primaryMode: "vivid" as const }, { hue: 106, kappa: 0.5, pageStep: 2 as const }]) {
+      clearScaleCache();
+      const cold = buildTheme(o);
+      expect(buildTheme(o)).toEqual(cold);
+      clearScaleCache();
+      expect(buildTheme(o)).toEqual(cold);
+    }
   });
 });
