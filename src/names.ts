@@ -20,7 +20,7 @@ export const CORE_RADIUS = 8;
 const SUBS = [
   { name: "rose", from: 3, to: 17, ref: 16 }, // Tailwind rose-500 16.4
   { name: "coral", from: 33, to: 44, ref: 40 }, // CSS coral 40.2
-  { name: "peach", from: 60, to: 72, ref: 64 }, // CSS peachpuff 63.7
+  { name: "carrot", from: 60, to: 72, ref: 64 }, // carrot orange #ed9121 = 64.0 (alternatives: tangerine 58.5, honey 69.5)
   { name: "gold", from: 88, to: 98, ref: 95 }, // CSS gold 95
   { name: "yellow-green", from: 114, to: 125, ref: 127 }, // CSS yellowgreen 127
   { name: "grass", from: 141, to: 148, ref: 147 }, // Radix grass 147

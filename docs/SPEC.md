@@ -144,7 +144,7 @@ Theme = {
 ```
 `canvasDark` dịch L của step 1–8 dark neutral theo `canvasDark − 0.178`, giữ nguyên ΔL giữa các bậc; step 11–12 (chữ) không dịch. Dùng cho preset devglow (canvas 0.134–0.187).
 
-Seed của brand/theme là **hue tuỳ ý 0–360°** (ví dụ coral 40°, peach 64°); không cần nằm trong bộ lõi. Bộ lõi chỉ dùng cho hue trạng thái, chart và các test H1/H2. Mọi seed tuỳ ý vẫn được bảo đảm A3–A6 và T4 (quét mọi hue, §6); `nameOfHue` chỉ cấp nhãn.
+Seed của brand/theme là **hue tuỳ ý 0–360°** (ví dụ coral 40°, carrot 64°); không cần nằm trong bộ lõi. Bộ lõi chỉ dùng cho hue trạng thái, chart và các test H1/H2. Mọi seed tuỳ ý vẫn được bảo đảm A3–A6 và T4 (quét mọi hue, §6); `nameOfHue` chỉ cấp nhãn.
 
 Output build: một file CSS (`:root` light + `.dark`), dạng `--token: oklch(L C h)`; khối `@media (color-gamut: p3)` ghi đè primitive bằng bản chroma P3 (cùng cấu trúc Radix: sRGB mặc định + P3 trong `@supports (color: color(display-p3 1 1 1))` / `@media (color-gamut: p3)`); và `@theme inline { --color-<token>: var(--<token>) }` cho Tailwind v4.
 
@@ -291,7 +291,7 @@ Tên ramp tránh trùng tên Radix (slate/sand…) để khỏi nhầm giá tr�
 |---|---|---|
 | 3–17 | rose | Tailwind rose-500 16.4 |
 | 33–44 | coral | CSS `coral` 40.2 |
-| 60–72 | peach | CSS `peachpuff` 63.7 |
+| 60–72 | carrot | carrot orange `#ed9121` = 64.0 (ứng viên khác: tangerine 58.5, honey 69.5) |
 | 88–98 | gold | CSS `gold` 95 |
 | 114–125 | yellow-green | CSS `yellowgreen` 127 |
 | 141–148 | grass | Radix grass 147 |
@@ -302,7 +302,7 @@ Tên ramp tránh trùng tên Radix (slate/sand…) để khỏi nhầm giá tr�
 | 300–317 | purple | Radix purple 306, Tailwind 304 (CSS `purple` h 328 khác nghĩa, không dùng) |
 | 333–347 | raspberry | mô tả, không có tham chiếu |
 
-Lưu ý: `peach` đặt ở 60–72° theo góc thật (peachpuff 63.7°); `apricot` (CSS 54°) rơi vào span lõi của orange nên không có tên riêng. Cả hai thực chất là tint (L 0.88–0.91, C ≈ 0.06): nằm ở step 4–6 của scale orange (ΔE 0.016–0.019), không phải một hue riêng.
+Lưu ý: tên ở 60–72° là `carrot` (góc 64.0°), không phải peach: peach/apricot thực chất là **tint** (L 0.88–0.91, C ≈ 0.06, CSS `peachpuff` 63.7°, `apricot` 54°) nằm ở step 4–6 của scale orange (ΔE 0.016–0.019), không phải một hue riêng, nên không dùng làm tên hue.
 
 Khảo sát "trộn pink + yellow" (2026-11-04): cung ngắn pink 355° → yellow 106° dài 111°, điểm giữa **50.5°** = orange lõi (lệch 1.5°). Không thể thêm hue thứ 13: khoảng trống lớn nhất giữa hai hue lõi là 41° nên một hue chen vào chỉ cách tối đa 20.5° < 22° (H1); thay orange bằng 62.5° còn cách amber 17.5°. Preview tham khảo: `docs/preview/mix.html`.
 
@@ -460,7 +460,7 @@ Quyết định nhỏ tôi đã tự chọn (đánh dấu để bạn soát): hu
 | # | Mục | Chi tiết | Xử lý |
 |---|---|---|---|
 | O1 | **Vùng chết foreground ở biên chữ trắng/đen** | **Đã sửa** (`src/scale.ts`). Nguyên nhân thật: s9 và s10 nằm hai phía ngưỡng đổi chữ (rớt ở 30–34° và 246–250°, không chỉ 3 seed). Sửa: pivot luminance Y = √(0.05·1.05) − 0.05 ≈ 0.179 (chữ trắng và đen thuần đều ≈ 4.58:1); hướng hover δ đổi dấu liên tục quanh L pivot của từng hue. Trong ±0.04 L quanh pivot, hover chuyển sang khác biệt bằng **chroma** ở cùng luminance (iso-Y) nên CR của foreground không đổi và T4 giữ ở mọi hue. Còn lại: foreground là trắng/đen thuần ở 30–36° và 240.5–247° (κ=0.85) | Biên mỏng: hover ΔE min 0.0216 (ngưỡng 0.02), độ liên tục max 0.018 ΔE/độ (ngưỡng 0.02) — đổi hằng số phải chạy lại A5 và T4 |
-| O2 | Step 11–12 của yellow/amber ô-liu | Không drift hue (§4.5) | Duyệt mắt swatch; nếu xấu thêm bảng drift thưa |
+| O2 | Step 11–12 của yellow/amber ô-liu | **Đã chấp nhận** (soát mắt 2026-11-04): giữ nguyên, không thêm bảng drift hue (§4.5) | — |
 | O3 | Hiển thị P3 và hành vi `oklch()` ngoài gamut | Chưa test trình duyệt | Phase 1: kiểm Chrome/Safari/Firefox |
 | O4 | Alpha P3 | Chưa prototype | Chỉ làm nếu D6 mở rộng |
 | O5 | `typescript@7.0.2` + Vitest 5.1 + tsdown 0.23.5 | Chỉ kiểm peer range | Smoke khi dựng khung |
