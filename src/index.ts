@@ -14,3 +14,4 @@ export { toDtcg } from "./dtcg";
 export { PRESETS } from "./presets";
 export { applyThemeToRoot } from "./runtime";
 export { toRuntimeCss } from "./css";
+export { DEVGLOW_PRESETS, DEVGLOW_SEED_HUES, DEVGLOW_TAGLINES, derivePreset } from "./devglow";

@@ -1,0 +1,275 @@
+{
+  "source": {
+    "repo": "https://github.com/phatnt199/devglow",
+    "sha": "5c131e1a3d75e54392e1d6af16b0f7553e1164ec",
+    "fetchedAt": "2026-11-04T16:35:32.886Z",
+    "license": "MIT",
+    "copyright": "2025 Phat Nguyen"
+  },
+  "palettes": {
+    "amber": {
+      "colors": {
+        "FOREGROUND": "#ede5d8",
+        "BACKGROUND": "#0d0b08",
+        "RED": "#b86b5a",
+        "GREEN": "#8a9a78",
+        "BLUE": "#7a8b98",
+        "ORANGE": "#c48a5a",
+        "YELLOW": "#d4a855",
+        "PINK": "#c4897a",
+        "GOLD": "#dead6a",
+        "TEAL": "#7a9a88",
+        "SKY": "#8a9eb0",
+        "WINE": "#8a5040",
+        "DARK_00": "#0f0d0a",
+        "DARK_01": "#1a1814",
+        "DARK_02": "#2a2820",
+        "DARK_03": "#3a3830",
+        "DARK_04": "#7a7468"
+      },
+      "tagline": "one for the golden hour"
+    },
+    "ash": {
+      "colors": {
+        "FOREGROUND": "#dadad6",
+        "BACKGROUND": "#0b0b0a",
+        "RED": "#b08078",
+        "GREEN": "#9aa396",
+        "BLUE": "#8c96a0",
+        "ORANGE": "#bfa088",
+        "YELLOW": "#c0bca0",
+        "PINK": "#ae9aa0",
+        "GOLD": "#c8bc9e",
+        "TEAL": "#94a6a2",
+        "SKY": "#98a2ac",
+        "WINE": "#6e6066",
+        "DARK_00": "#0d0d0c",
+        "DARK_01": "#181817",
+        "DARK_02": "#262625",
+        "DARK_03": "#363635",
+        "DARK_04": "#6e6e6a"
+      },
+      "tagline": "one for the blank page"
+    },
+    "blush": {
+      "colors": {
+        "FOREGROUND": "#e8ddd5",
+        "BACKGROUND": "#0c0a0a",
+        "RED": "#c47070",
+        "GREEN": "#8ba89a",
+        "BLUE": "#7e8ba8",
+        "ORANGE": "#c4917a",
+        "YELLOW": "#d4b483",
+        "PINK": "#d4889a",
+        "GOLD": "#cca88a",
+        "TEAL": "#8aa09a",
+        "SKY": "#9aaabf",
+        "WINE": "#944e63",
+        "DARK_00": "#100e0e",
+        "DARK_01": "#1a1717",
+        "DARK_02": "#2a2626",
+        "DARK_03": "#3a3535",
+        "DARK_04": "#7a7070"
+      },
+      "tagline": "one for the tender night"
+    },
+    "dusk": {
+      "colors": {
+        "FOREGROUND": "#e5e0ea",
+        "BACKGROUND": "#0a090d",
+        "RED": "#cc6070",
+        "GREEN": "#7aa8a0",
+        "BLUE": "#7080a8",
+        "ORANGE": "#c88060",
+        "YELLOW": "#d4a870",
+        "PINK": "#c878a0",
+        "GOLD": "#d0a878",
+        "TEAL": "#709898",
+        "SKY": "#8090b8",
+        "WINE": "#8a4068",
+        "DARK_00": "#0e0d10",
+        "DARK_01": "#181620",
+        "DARK_02": "#282530",
+        "DARK_03": "#383540",
+        "DARK_04": "#787080"
+      },
+      "tagline": "one for the fading light"
+    },
+    "ember": {
+      "colors": {
+        "FOREGROUND": "#f5f0eb",
+        "BACKGROUND": "#141311",
+        "RED": "#d06060",
+        "GREEN": "#6aadad",
+        "BLUE": "#5a9d9d",
+        "ORANGE": "#d4785e",
+        "YELLOW": "#e0ba6a",
+        "PINK": "#e08b72",
+        "GOLD": "#eaca80",
+        "TEAL": "#7bbdbd",
+        "SKY": "#6aadad",
+        "WINE": "#b45a42",
+        "DARK_00": "#0d0d0b",
+        "DARK_01": "#1a1917",
+        "DARK_02": "#2e2c28",
+        "DARK_03": "#3a3835",
+        "DARK_04": "#78716c"
+      },
+      "tagline": "one for the fire"
+    },
+    "mocha": {
+      "colors": {
+        "FOREGROUND": "#e8dccb",
+        "BACKGROUND": "#0e0a07",
+        "RED": "#bc6a55",
+        "GREEN": "#9ca876",
+        "BLUE": "#7e8794",
+        "ORANGE": "#ce9560",
+        "YELLOW": "#d4b173",
+        "PINK": "#c99488",
+        "GOLD": "#ddb87a",
+        "TEAL": "#8aa896",
+        "SKY": "#9398a6",
+        "WINE": "#7a4838",
+        "DARK_00": "#100c09",
+        "DARK_01": "#1c1611",
+        "DARK_02": "#2c231b",
+        "DARK_03": "#3c3228",
+        "DARK_04": "#786a5c"
+      },
+      "tagline": "one for the late café"
+    },
+    "moss": {
+      "colors": {
+        "FOREGROUND": "#dde3d2",
+        "BACKGROUND": "#0a0c08",
+        "RED": "#c16b5a",
+        "GREEN": "#8fb07a",
+        "BLUE": "#6e8a82",
+        "ORANGE": "#c8945e",
+        "YELLOW": "#c2b070",
+        "PINK": "#b98a86",
+        "GOLD": "#d2b878",
+        "TEAL": "#7aa890",
+        "SKY": "#88a0a0",
+        "WINE": "#6e5040",
+        "DARK_00": "#0c0e0a",
+        "DARK_01": "#161a12",
+        "DARK_02": "#242a1e",
+        "DARK_03": "#343a2c",
+        "DARK_04": "#6a7060"
+      },
+      "tagline": "one for the deep wood"
+    },
+    "nocturne": {
+      "colors": {
+        "FOREGROUND": "#dce0ec",
+        "BACKGROUND": "#08090f",
+        "RED": "#c66b74",
+        "GREEN": "#7fa8a0",
+        "BLUE": "#7e92c4",
+        "ORANGE": "#c68e6e",
+        "YELLOW": "#cbbe82",
+        "PINK": "#b084b8",
+        "GOLD": "#d0b884",
+        "TEAL": "#74a6b4",
+        "SKY": "#8ea4d0",
+        "WINE": "#5a4e84",
+        "DARK_00": "#0a0b12",
+        "DARK_01": "#14161f",
+        "DARK_02": "#20232e",
+        "DARK_03": "#30343f",
+        "DARK_04": "#6a6e80"
+      },
+      "tagline": "one for the midnight watch"
+    },
+    "plum": {
+      "colors": {
+        "FOREGROUND": "#e4dce8",
+        "BACKGROUND": "#0b080d",
+        "RED": "#c46a86",
+        "GREEN": "#88ac98",
+        "BLUE": "#8088c0",
+        "ORANGE": "#c68c72",
+        "YELLOW": "#cbb078",
+        "PINK": "#c285b8",
+        "GOLD": "#d2ac84",
+        "TEAL": "#80aab0",
+        "SKY": "#9a92c8",
+        "WINE": "#8a4a78",
+        "DARK_00": "#0d0a10",
+        "DARK_01": "#181420",
+        "DARK_02": "#272030",
+        "DARK_03": "#373040",
+        "DARK_04": "#756c80"
+      },
+      "tagline": "one for the violet hour"
+    },
+    "sage": {
+      "colors": {
+        "FOREGROUND": "#e6e6e6",
+        "BACKGROUND": "#080808",
+        "RED": "#af5f5f",
+        "GREEN": "#87afaf",
+        "BLUE": "#7590af",
+        "ORANGE": "#d59572",
+        "YELLOW": "#e5b567",
+        "PINK": "#d68c8c",
+        "GOLD": "#ebc17a",
+        "TEAL": "#7db9b6",
+        "SKY": "#7eaac7",
+        "WINE": "#924653",
+        "DARK_00": "#111111",
+        "DARK_01": "#181818",
+        "DARK_02": "#282828",
+        "DARK_03": "#383838",
+        "DARK_04": "#797979"
+      },
+      "tagline": "one for the quiet night"
+    },
+    "tide": {
+      "colors": {
+        "FOREGROUND": "#d5dee0",
+        "BACKGROUND": "#07090b",
+        "RED": "#c0707a",
+        "GREEN": "#7fb0a6",
+        "BLUE": "#6f92b0",
+        "ORANGE": "#c28e6e",
+        "YELLOW": "#c4b58c",
+        "PINK": "#b189a0",
+        "GOLD": "#d0bc88",
+        "TEAL": "#6fb0ae",
+        "SKY": "#88a8c2",
+        "WINE": "#5e6e80",
+        "DARK_00": "#090c0e",
+        "DARK_01": "#121820",
+        "DARK_02": "#1e2630",
+        "DARK_03": "#2e3742",
+        "DARK_04": "#66727c"
+      },
+      "tagline": "one for the still water"
+    },
+    "vesper": {
+      "colors": {
+        "FOREGROUND": "#ffffff",
+        "BACKGROUND": "#101010",
+        "RED": "#ff8080",
+        "GREEN": "#ffc799",
+        "BLUE": "#65737e",
+        "ORANGE": "#ffc799",
+        "YELLOW": "#99ffe4",
+        "PINK": "#a0a0a0",
+        "GOLD": "#ffcfa8",
+        "TEAL": "#7fd8c0",
+        "SKY": "#82929e",
+        "WINE": "#a65d6e",
+        "DARK_00": "#161616",
+        "DARK_01": "#1c1c1c",
+        "DARK_02": "#232323",
+        "DARK_03": "#343434",
+        "DARK_04": "#5c5c5c"
+      },
+      "tagline": "one for the evening star"
+    }
+  }
+}

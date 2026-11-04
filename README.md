@@ -27,6 +27,10 @@ Tested with Node 22 and Bun 1.4 (ESM only). `bun run smoke:clean` proves it from
 ```
 
 Presets are named after the 12 core hues: `red orange amber yellow lime green teal cyan blue violet magenta pink`.
+There are also 12 presets derived from the palettes of [devglow](https://github.com/phatnt199/devglow) (MIT, see `NOTICE`):
+`devglow-sage devglow-ember devglow-blush devglow-amber devglow-dusk devglow-vesper devglow-moss devglow-tide devglow-mocha
+devglow-plum devglow-ash devglow-nocturne`: a hand-picked brand hue per mood, the neutral ramp and page darkness measured from
+the palette. In code: `DEVGLOW_PRESETS`. Refresh them with `bun tools/sync-devglow.ts --ref <commit>`.
 The file defines every token below as `oklch()` variables (names match shadcn's), a `.dark` block, and `@theme inline`
 so `bg-primary`, `text-muted-foreground`, `border-input`, `ring-ring`... work. Toggle dark mode with `.dark` on `<html>`.
 Design tokens for other tools (Figma, Style Dictionary): `gennex-color/tokens/blue.tokens.json` (DTCG 2025.10 color

@@ -543,6 +543,33 @@ Chi phí: `buildTheme` ≈ **5.3 ms** mỗi lần (360 hue, neutral `auto`, cả
 4. **Giảm style recalc** (7.2 ms ở 4×): áp dụng vào container demo (`applyThemeToRoot(theme, container)`) thay vì `:root` để chỉ subtree cần tính lại.
 5. Đẩy `buildTheme` sang Web Worker (chỉ trả `Theme`); tốn truyền dữ liệu nhưng giải phóng main thread. Làm sau cùng.
 
+### 12.5 Preset devglow (D8 + D9, đã cài)
+
+**Đồng bộ (D8, phương án C)**: `bun tools/sync-devglow.ts --ref <sha> [--path <checkout>]` chép 12 file `lua/devglow/palettes/*.lua` + tagline trong README ở commit ghim vào `presets/devglow.snapshot.json` (`source: { repo, sha, fetchedAt, license: "MIT", copyright }`), ghi `NOTICE` (MIT © 2025 Phat Nguyen + sha), assert đủ 17 key hex mỗi palette, rồi in những gì đổi so với snapshot cũ (hue neutral > 5°, chroma, κ). Build và test chỉ đọc snapshot, không mạng. Snapshot hiện ở devglow `5c131e1a3d75e54392e1d6af16b0f7553e1164ec` (2026-07-19). `NOTICE` nằm trong gói (`files`).
+
+**Suy ra preset** (`derivePreset`, `src/devglow.ts`, hàm thuần): neutral hue = trung bình vòng có trọng số chroma của `BACKGROUND`, `DARK_00..03`; chroma bậc 9 = trung bình của `C(DARK_02)/0.31` và `C(DARK_03)/0.49` (xấp xỉ bậc 3–4 và 5–6 của ramp), kẹp ≤ 0.03; `canvas.dark` = L của `BACKGROUND`; tổng chroma < 0.004 → neutral xám thuần. κ = median `C/Cmax(L,h)` của accent có C ≥ 0.03, kẹp [0.35, 0.85]. **Hue chính chọn tay theo mood (D9)**, không đọc từ dữ liệu: sage 150, ember 40, blush 5, amber 75, dusk 355, vesper 175, moss 135, tide 200, mocha 60, plum 320, ash 107, nocturne 270.
+
+| Preset | Hue chính | κ | Neutral h / C | Canvas dark | Nền dark | Tagline |
+|---|---|---|---|---|---|---|
+| sage | 150 | 0.49 | xám thuần | 0.134 | `#080808` | one for the quiet night |
+| ember | 40 | 0.57 | 86.6° / 0.018 | 0.187 | `#131312` | one for the fire |
+| blush | 5 | 0.35 | 17.5° / 0.017 | 0.147 | `#0b0a0a` | one for the tender night |
+| amber | 75 | 0.46 | 89° / 0.030* | 0.151 | `#0c0b0a` | one for the golden hour |
+| dusk | 355 | 0.49 | 296.8° / 0.030* | 0.143 | `#0a090b` | one for the fading light |
+| vesper | 175 | 0.85 | xám thuần | 0.173 | `#101010` | one for the evening star |
+| moss | 135 | 0.41 | 128.4° / 0.030* | 0.150 | `#0b0b0a` | one for the deep wood |
+| tide | 200 | 0.40 | 252.2° / 0.030* | 0.138 | `#08090a` | one for the still water |
+| mocha | 60 | 0.52 | 63.4° / 0.030* | 0.149 | `#0c0b0a` | one for the late café |
+| plum | 320 | 0.44 | 304.6° / 0.030* | 0.141 | `#09090a` | one for the violet hour |
+| ash | 107 | 0.35 | 106.6° / 0.005 | 0.149 | `#0b0b0b` | one for the blank page |
+| nocturne | 270 | 0.46 | 274° / 0.030* | 0.142 | `#09090b` | one for the midnight watch |
+
+\* chạm trần 0.030: trần quyết định độ ám màu của nền, 7/12 palette đụng trần, tức dữ liệu devglow muốn nền ám màu hơn mức ta cho phép. Nền dark của sage (`#080808`) và vesper (`#101010`) trùng đúng `BACKGROUND` của devglow.
+
+**Đầu ra**: `DEVGLOW_PRESETS` (`ThemeOptions`), `DEVGLOW_TAGLINES`, `DEVGLOW_SEED_HUES`, `derivePreset` từ `gennex-color`; file dựng sẵn `gennex-color/css/devglow-<tên>.css` và `gennex-color/tokens/devglow-<tên>.tokens.json` (24 preset tổng cộng cùng 12 preset hue). Test (`test/devglow.test.ts`, 12 test): parser từ fixture thật (từ chối thiếu key/hex hỏng), snapshot (sha 40 hex, MIT, tagline), neutral hue khớp số đo Phụ lục B ±4°, κ khớp ±0.015, mood (ember/amber/mocha/moss ấm, tide/nocturne/plum/dusk lạnh), hàm thuần, và **mọi cặp contrast ở cả hai `primaryMode`** cho cả 12 preset.
+
+Hệ quả đã biết: κ 0.35–0.5 làm brand "trầm" như tinh thần devglow nhưng `primary` ở light cũng trầm hơn preset hue (ví dụ amber `#635139`). Palette gốc của devglow là dark-first, light ở đây là phần dẫn xuất của ta.
+
 ## Phụ lục A — Cách tái lập số liệu
 
 Script ở `/tmp/probe` (ephemeral): `radix.mjs` (median L/C/hue theo bậc, step 9, khoảng cách hue), `fit.mjs` (step 9 vs cusp gamut), `drift.mjs`/`drift2.mjs` (độ dốc drift, lợi ích), `gen.mjs` (bộ sinh prototype: `scale(h, dark)`), `eval1–3.mjs` (so Radix), `eval2.mjs` (sweep luật A3/A4), `cont.mjs` (liên tục 1°), `hues.mjs` (khoảng cách hue/ΔE), `p3.mjs`, `shad.mjs` (audit shadcn), `dg.mjs`/`presets.mjs` (devglow), `swatch.mjs` (SVG + CVD), `time.mjs`.
