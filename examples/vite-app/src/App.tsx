@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { ThemeSlider } from "@/components/theme-slider"
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          <ThemeSlider />
           <Alert>
             <Info />
             <AlertTitle>Heads up</AlertTitle>

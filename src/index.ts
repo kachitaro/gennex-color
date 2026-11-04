@@ -12,3 +12,5 @@ export { toCss, toOklchCss } from "./css";
 export type { CssOptions } from "./css";
 export { toDtcg } from "./dtcg";
 export { PRESETS } from "./presets";
+export { applyThemeToRoot } from "./runtime";
+export { toRuntimeCss } from "./css";

@@ -31,6 +31,19 @@ nameOfHue(40);  // { name: "coral", kind: "sub", core: "orange", offset: -12 }
 `status` (hue per `destructive | success | warning | info`), `pageStep` (`2` = page uses neutral step 2),
 `primaryMode` (below).
 
+## Change the theme at runtime
+
+```ts
+import { applyThemeToRoot, buildTheme } from "gennex-color";
+
+slider.addEventListener("input", () => applyThemeToRoot(buildTheme({ hue: +slider.value, neutral: "auto" })));
+```
+
+Keeps one `<style data-gennex-theme-style>` in `<head>` and swaps only CSS variables (both light and dark, so toggling
+`.dark` on `<html>` needs no second call): no layout shift, nothing else in the DOM changes, and applying the same theme
+twice rewrites nothing. `applyThemeToRoot(theme, element)` scopes it to one element. `buildTheme` takes about 5 ms; coalesce
+calls with `requestAnimationFrame` while dragging (see `examples/vite-app/src/components/theme-slider.tsx`).
+
 ## `primaryMode`: `accessible` (default) and `vivid`
 
 shadcn components use `text-primary` as a text color in five places (`item`, `empty`, `field`, `badge` link, `button`

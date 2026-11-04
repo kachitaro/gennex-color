@@ -34,4 +34,6 @@ for (const cls of [".bg-primary", ".text-primary-foreground", ".bg-card", ".bord
   if (!css.includes(cls)) throw new Error(`utility ${cls} not generated`);
 }
 if ((builtVars.get("primary") ?? []).some((v) => Math.abs(v[0] - 0.205) < 1e-3 && v[1] === 0)) throw new Error("shadcn default theme leaked into the build");
+const js = readFileSync(`${dir}/${readdirSync(dir).find((f) => f.endsWith(".js"))!}`, "utf8");
+if (!js.includes("data-gennex-theme-style")) throw new Error("applyThemeToRoot is not in the built app");
 console.log(`example build ok: ${decls(root).length + decls(dark).length} theme variables present, utilities generated`);

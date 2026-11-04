@@ -34,3 +34,11 @@ export function toCss(theme: Theme, { radius = "0.625rem" }: CssOptions = {}): s
     block("@theme inline", [...TOKEN_NAMES.map((k) => `--color-${k}: var(--${k});`), ...RADII.map(([n, v]) => `--radius-${n}: ${v};`)]),
   ].join("\n");
 }
+
+/**
+ * Only the variables (no `@theme`, no radius), for a stylesheet that is injected at runtime. `light` and `dark` are the
+ * selectors that should carry each mode.
+ */
+export function toRuntimeCss(theme: Theme, sel: { light: string; dark: string }): string {
+  return [block(sel.light, vars(theme.light)), block(sel.dark, vars(theme.dark))].join("\n");
+}

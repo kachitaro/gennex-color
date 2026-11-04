@@ -369,7 +369,7 @@ Quy tắc chung: ngưỡng solve của bộ sinh phải **chặt hơn** ngưỡn
 | Cấu trúc | Một package: `src/` (hàm thuần), `tools/` (sync devglow, build CSS), `presets/`, `docs/`; demo portfolio là package riêng sau | giữ nhỏ | monorepo từ đầu |
 | Tích hợp | Tailwind `4.3.4` + `@tailwindcss/vite` `4.3.4` (smoke C2); `shadcn@4.23.0` CLI chỉ để kiểm token khớp | | |
 
-API: `generateScale`, `generateNeutral`, `neutralAlpha`, `neutralBorder`, `buildTheme(opts) → { light, dark }` (mỗi mode là `Record<token, hex>`), `toCss(theme, opts?)`, `toOklchCss(hex)`, `toDtcg(theme)`, `PRESETS`, `nameOfHue(h)`, `CORE_HUES`, `TOKEN_NAMES`. Chưa có: `applyThemeToRoot`, bản P3.
+API: `generateScale`, `generateNeutral`, `neutralAlpha`, `neutralBorder`, `buildTheme(opts) → { light, dark }` (mỗi mode là `Record<token, hex>`), `toCss(theme, opts?)`, `toRuntimeCss`, `toOklchCss(hex)`, `toDtcg(theme)`, `applyThemeToRoot(theme, element?)`, `PRESETS`, `nameOfHue(h)`, `CORE_HUES`, `TOKEN_NAMES`. Chưa có: bản P3.
 
 ---
 
@@ -516,6 +516,14 @@ Tác dụng thực tế (đo): vivid trả lại màu sáng cho hue chữ-đen �
 
 5 component dùng `text-primary` làm chữ (đếm từ registry `radix-nova` của `shadcn@4.23.0`, mỗi nơi 1 chỗ): `item`, `empty`, `field` (link `[&>a:hover]:text-primary`), `badge` (variant link) và `button` (variant link). Ghi đè sang `primary-text` khi dùng vivid: `perl -pi -e 's/text-primary(?![\w-])/text-primary-text/g' src/components/ui/{item,empty,field,badge,button}.tsx` (lookahead không đụng `text-primary-foreground`; đã chạy thử trên example, Tailwind sinh `.text-primary-text`). Xem README.
 
+
+### 12.3 Đổi theme lúc chạy: `applyThemeToRoot(theme, element?)`
+
+Dùng cho demo thanh trượt hue. Cơ chế (`src/runtime.ts`): giữ **một** `<style data-gennex-theme-style>` trong `<head>` chứa chỉ các biến (`toRuntimeCss`, không có `@theme`/radius; `@theme inline` và giá trị mặc định vẫn do file CSS tĩnh cung cấp) và chỉ thay text của nó. Cả hai mode đều được ghi nên bật/tắt `.dark` không cần gọi lại. Root: selector `:root:root` (light) và `:root.dark` (dark), cao hơn `:root`/`.dark` của CSS tĩnh bất kể thứ tự stylesheet (`.dark` phải ở `<html>` như shadcn). Element khác: gắn `data-gennex-theme="<id>"`; dark khi nó hoặc tổ tiên có `.dark`.
+
+**Không layout shift**: chỉ đổi custom property; không thêm node vào `<body>`, không đổi attribute/class/style của root; gọi lại với theme giống hệt không ghi gì (cùng text node). Test (`test/runtime.test.ts`, happy-dom, 8 test): biến computed theo theme và theo `.dark` (không gọi lại khi toggle), một `<style>` duy nhất qua 4 lần cập nhật và 90 hue liên tiếp, body/root không đổi, scope theo element độc lập, mặc định dùng `document` toàn cục, ném lỗi rõ ràng khi không có DOM. Đột biến thử: bỏ điều kiện "chỉ ghi khi khác" làm test layout đỏ; đổi `:root:root` thành `:root` làm test nội dung đỏ.
+
+Chi phí: `buildTheme` ≈ **5.3 ms** mỗi lần (360 hue, neutral `auto`, cả hai mode) trong Bun; ngân sách 16 ms/frame còn dư. Example (`examples/vite-app/src/components/theme-slider.tsx`) gộp mỗi frame một lần cập nhật bằng `requestAnimationFrame`. Đã kiểm trong Chrome headless: tải `?hue=40` và `?hue=140` cho đúng một `<style>`, màu primary/nền đổi theo (coral light, lime dark).
 
 ## Phụ lục A — Cách tái lập số liệu
 
