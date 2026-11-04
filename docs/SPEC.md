@@ -144,6 +144,8 @@ Theme = {
 ```
 `canvasDark` dịch L của step 1–8 dark neutral theo `canvasDark − 0.178`, giữ nguyên ΔL giữa các bậc; step 11–12 (chữ) không dịch. Dùng cho preset devglow (canvas 0.134–0.187).
 
+Seed của brand/theme là **hue tuỳ ý 0–360°** (ví dụ coral 40°, peach 64°); không cần nằm trong bộ lõi. Bộ lõi chỉ dùng cho hue trạng thái, chart và các test H1/H2. Mọi seed tuỳ ý vẫn được bảo đảm A3–A6 và T4 (quét mọi hue, §6); `nameOfHue` chỉ cấp nhãn.
+
 Output build: một file CSS (`:root` light + `.dark`), dạng `--token: oklch(L C h)`; khối `@media (color-gamut: p3)` ghi đè primitive bằng bản chroma P3 (cùng cấu trúc Radix: sRGB mặc định + P3 trong `@supports (color: color(display-p3 1 1 1))` / `@media (color-gamut: p3)`); và `@theme inline { --color-<token>: var(--<token>) }` cho Tailwind v4.
 
 ---
@@ -281,6 +283,29 @@ Ràng buộc đo được trên `gray` (light/dark): N11 trên N1…N4 = 5.77 / 
 
 Tên ramp tránh trùng tên Radix (slate/sand…) để khỏi nhầm giá trị khác nhau cùng tên.
 
+### 5.3 Tên phụ cho hue (nhãn slider)
+
+`nameOfHue(h)` (`src/names.ts`) dùng cho nhãn hiển thị; **không** ảnh hưởng bộ sinh, H1/H2 hay `ANCHORS`. Nguyên tắc: hue lõi giữ tên của chính nó trong `[hue−8°, hue+8°)` (nửa mở); tên phụ chỉ phủ khoảng giữa các span lõi; bảng là phân hoạch vòng tròn (24 đoạn, 360°).
+
+| Khoảng (°) | Tên | Tham chiếu thật (góc OKLCH) |
+|---|---|---|
+| 3–17 | rose | Tailwind rose-500 16.4 |
+| 33–44 | coral | CSS `coral` 40.2 |
+| 60–72 | peach | CSS `peachpuff` 63.7 |
+| 88–98 | gold | CSS `gold` 95 |
+| 114–125 | yellow-green | CSS `yellowgreen` 127 |
+| 141–148 | grass | Radix grass 147 |
+| 164–176 | jade | Radix jade 171 |
+| 192–206 | turquoise | CSS `mediumturquoise` 192 / `darkturquoise` 197 |
+| 222–247 | sky | CSS `deepskyblue` 232, Tailwind sky 237 |
+| 263–284 | indigo | Tailwind indigo 277 (CSS `indigo` là màu tối h 302, không dùng) |
+| 300–317 | purple | Radix purple 306, Tailwind 304 (CSS `purple` h 328 khác nghĩa, không dùng) |
+| 333–347 | raspberry | mô tả, không có tham chiếu |
+
+Lưu ý: `peach` đặt ở 60–72° theo góc thật (peachpuff 63.7°); `apricot` (CSS 54°) rơi vào span lõi của orange nên không có tên riêng. Cả hai thực chất là tint (L 0.88–0.91, C ≈ 0.06): nằm ở step 4–6 của scale orange (ΔE 0.016–0.019), không phải một hue riêng.
+
+Khảo sát "trộn pink + yellow" (2026-11-04): cung ngắn pink 355° → yellow 106° dài 111°, điểm giữa **50.5°** = orange lõi (lệch 1.5°). Không thể thêm hue thứ 13: khoảng trống lớn nhất giữa hai hue lõi là 41° nên một hue chen vào chỉ cách tối đa 20.5° < 22° (H1); thay orange bằng 62.5° còn cách amber 17.5°. Preview tham khảo: `docs/preview/mix.html`.
+
 ---
 
 ## 6. Quy tắc contrast → test tự động
@@ -306,7 +331,7 @@ Mọi test quét: **12 hue lõi × 3 neutral × 2 mode** (36 tổ hợp × 2) + 
 | H1 | 12 hue lõi: khoảng cách hue min | ≥ 22° | 23° |
 | H2 | ΔE_OK(step 9) min giữa hai hue lõi bất kỳ | ≥ 0.05 | 0.060 |
 | H3 | Tên ↔ góc hue: \|h − h_ref\| nhỏ nhất qua {Tailwind, Radix} | ≤ 8° | max 5° (yellow qua Radix 101°); còn lại ≤ 4.4° |
-| H4 | `nameOfHue(h)` cho seed bất kỳ trả `{ tên hue lõi gần nhất, độ lệch có dấu }`; \|độ lệch\| | ≤ 21° (nửa khoảng hở lớn nhất 41°) | — |
+| H4 | `nameOfHue(h)` trả tên cho **mọi** góc (§5.3): đúng tên lõi trong `[hue−8, hue+8)`, tên phụ ở khoảng giữa, không hở/chồng, bọc vòng 360; kèm `{ kind, core gần nhất, offset có dấu }` | \|offset\| ≤ 21° | `test/names.test.ts` (max 20.5°) |
 | C1 | CSS phát ra: mọi `var(--x)` ở L2 trỏ tới primitive đã định nghĩa; `.dark` ghi đè đủ các token khác biệt (không thiếu, không thừa) | — | — |
 | C2 | Smoke Tailwind v4: `bg-primary text-primary-foreground border-border ring-ring` build ra CSS đúng (`@tailwindcss/vite` 4.3.4) | — | — |
 | R1 | Guard độ gần Radix (devDependency `@radix-ui/colors@3.0.0`): ΔE_OK trung bình 12 cặp ở §4.7 | ≤ 0.035 | 0.022 / 0.020 |
