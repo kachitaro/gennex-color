@@ -454,7 +454,7 @@ Thiết kế C:
 | D1 | Số hue lõi | **12** (gap 23°, ΔE 0.060); sky/indigo là bộ mở rộng sau |
 | D2 | Chính sách nút solid | **AA-first** (nút teal/green/cyan/orange/lime/amber/yellow dùng chữ đen; blue tối hơn Radix) |
 | D3 | Metric contrast | **WCAG 2.x là cổng chặn**; APCA chỉ báo cáo (không phải test, không dùng `apca-w3`) |
-| D4 | `input` border | **Nghiêm** ≥ 3:1 (WCAG 1.4.11) |
+| D4 | `input` border | **Nghiêm** ≥ 3:1 (WCAG 1.4.11) là mặc định (`neutralBorder`). Tuỳ chọn **"mềm"** (viền nhẹ hơn, không đảm bảo 3:1) có thể thêm sau, **chỉ khi ô nhập có nền riêng** (fill phân biệt với bề mặt) để vẫn nhận diện được theo 1.4.11; **chưa cài**, và nếu cài phải là tuỳ chọn theme tường minh (`inputBorder: 'soft'`), không phải mặc định |
 | D5 | Neutral cho slider | 3 ramp cố định **+ `auto`** (đi theo seed hue, C ≤ 0.016) |
 | D6 | Alpha | **Chỉ neutral + white/black** |
 | D7 | Token trạng thái | **Đủ 5 token**: `destructive/success/warning/info` × {X, foreground, subtle, text, border} |
