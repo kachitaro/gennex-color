@@ -6,6 +6,8 @@ export interface NeutralRamp {
   hue: number;
   /** chroma at step 9 (the peak) */
   chroma: number;
+  /** chroma at step 9 in dark mode, when it should differ from `chroma` (default: the same) */
+  chromaDark?: number;
   /** chroma per step relative to `chroma`; default TINT */
   tint?: readonly number[];
   /** lightness of step 1 per mode; steps 1-8 shift together (SPEC 3.4 canvas) */
@@ -41,7 +43,9 @@ const TINT = [0.09, 0.15, 0.26, 0.353, 0.447, 0.54, 0.693, 0.847, 1, 0.92, 0.84,
 const T11 = 4.55, T12 = 7.1; // a hair above the 4.5 / 7 test floors (8-bit rounding)
 
 export function generateNeutral({ mode, ramp }: { mode: Mode; ramp: NeutralRampName | NeutralRamp }): NeutralScale {
-  const { hue, chroma, tint = TINT, canvas } = typeof ramp === "string" ? NEUTRAL_RAMPS[ramp] : ramp;
+  const r = typeof ramp === "string" ? NEUTRAL_RAMPS[ramp] : ramp;
+  const { hue, tint = TINT, canvas } = r;
+  const chroma = mode === "dark" ? (r.chromaDark ?? r.chroma) : r.chroma;
   const shift = canvas?.[mode] === undefined ? 0 : canvas[mode]! - L[mode][0];
   const steps = L[mode].map((l, i): Oklch => ({ l: i < 8 ? l + shift : l, c: chroma * tint[i], h: hue }));
   // A shifted canvas moves surfaces toward the text color; keep s11/s12 passing on steps 1-4 (muted-foreground sits on accent = s4).

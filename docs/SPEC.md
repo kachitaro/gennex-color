@@ -583,6 +583,20 @@ Trong Bun `buildTheme` từ 5.2 xuống 1.1 ms (bộ test cũng nhanh hơn: 16 �
 
 Hệ quả đã biết: κ 0.35–0.5 làm brand "trầm" như tinh thần devglow nhưng `primary` ở light cũng trầm hơn preset hue (ví dụ amber `#635139`). Palette gốc của devglow là dark-first, light ở đây là phần dẫn xuất của ta.
 
+### 12.6 Cap chroma neutral riêng cho dark của preset devglow (tuỳ chọn, chưa đổi mặc định)
+
+`NeutralRamp.chromaDark` (mới): chroma bậc 9 riêng cho dark; bỏ trống = như `chroma`. `derivePreset(colors, { darkChromaCap })` và `devglowPreset(name, { darkChromaCap })` đặt `chromaDark = min(cap, raw)` trong đó `raw` là chroma bậc 9 suy từ palette trước khi kẹp; light vẫn kẹp 0.03. Không truyền option thì kết quả **y hệt** `DEVGLOW_PRESETS` (có test). Hằng đề xuất: `DEVGLOW_DARK_CHROMA_CAP = 0.06`.
+
+Cách chọn: đo độ khớp ("fit") = ΔE_OK trung bình từ 5 màu bề mặt devglow (`BACKGROUND`, `DARK_00..03`) tới bậc gần nhất của neutral dark (bậc 1–8) theo cap:
+
+| Cap | 0.03 (hiện tại) | 0.04 | 0.05 | **0.06** | 0.08 | không cap |
+|---|---|---|---|---|---|---|
+| Fit trung bình 12 palette | 0.0123 | 0.0116 | 0.0112 | **0.0111** | 0.0110 | 0.0110 |
+
+`raw` lớn nhất 0.080 (plum), nên từ 0.06 lên gần như phẳng. Palette hưởng lợi nhiều nhất: plum 0.0184 → 0.0130, dusk 0.0141 → 0.0126, moss 0.0134 → 0.0112, tide 0.0136 → 0.0109, nocturne 0.0138 → 0.0118, mocha 0.0115 → 0.0103. **amber xấu đi nhẹ** (0.0122 → 0.0127; raw 0.037). Mọi chênh lệch đều **dưới ngưỡng nhìn thấy (~0.02)**; trang preview cho thấy trang nền (bậc 1, chroma = chroma bậc 9 × 0.09) gần như trùng hex ở cả hai cap, khác biệt thật nằm ở card/accent/viền (bậc 3–6).
+
+Test: neutral với `chromaDark` mạnh (0.08, canvas 0.14) giữ luật N2/N3 ở mọi hue (bước 3°); 12 preset với cap 0.06 đạt mọi cặp contrast ở cả hai `primaryMode`. Preview: `docs/preview/devglow.html` (`scripts/preview-devglow.ts`): palette gốc (mã mẫu + 17 màu), dark cap 0.03, dark cap 0.06, light, kèm hex trang nền và fit từng palette.
+
 ## Phụ lục A — Cách tái lập số liệu
 
 Script ở `/tmp/probe` (ephemeral): `radix.mjs` (median L/C/hue theo bậc, step 9, khoảng cách hue), `fit.mjs` (step 9 vs cusp gamut), `drift.mjs`/`drift2.mjs` (độ dốc drift, lợi ích), `gen.mjs` (bộ sinh prototype: `scale(h, dark)`), `eval1–3.mjs` (so Radix), `eval2.mjs` (sweep luật A3/A4), `cont.mjs` (liên tục 1°), `hues.mjs` (khoảng cách hue/ΔE), `p3.mjs`, `shad.mjs` (audit shadcn), `dg.mjs`/`presets.mjs` (devglow), `swatch.mjs` (SVG + CVD), `time.mjs`.

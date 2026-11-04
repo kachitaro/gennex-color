@@ -31,6 +31,8 @@ There are also 12 presets derived from the palettes of [devglow](https://github.
 `devglow-sage devglow-ember devglow-blush devglow-amber devglow-dusk devglow-vesper devglow-moss devglow-tide devglow-mocha
 devglow-plum devglow-ash devglow-nocturne`: a hand-picked brand hue per mood, the neutral ramp and page darkness measured from
 the palette. In code: `DEVGLOW_PRESETS`. Refresh them with `bun tools/sync-devglow.ts --ref <commit>`.
+Optional: `devglowPreset(name, { darkChromaCap: DEVGLOW_DARK_CHROMA_CAP })` lets the dark neutral follow the palette's tint
+beyond the default 0.03 cap (compare in `docs/preview/devglow.html`; not the default).
 The file defines every token below as `oklch()` variables (names match shadcn's), a `.dark` block, and `@theme inline`
 so `bg-primary`, `text-muted-foreground`, `border-input`, `ring-ring`... work. Toggle dark mode with `.dark` on `<html>`.
 Design tokens for other tools (Figma, Style Dictionary): `gennex-color/tokens/blue.tokens.json` (DTCG 2025.10 color

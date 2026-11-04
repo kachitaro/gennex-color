@@ -15,3 +15,4 @@ export { PRESETS } from "./presets";
 export { applyThemeToRoot } from "./runtime";
 export { toRuntimeCss } from "./css";
 export { DEVGLOW_PRESETS, DEVGLOW_SEED_HUES, DEVGLOW_TAGLINES, derivePreset } from "./devglow";
+export { DEVGLOW_DARK_CHROMA_CAP, devglowPreset } from "./devglow";

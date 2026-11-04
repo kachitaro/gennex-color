@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { formatHex } from "culori";
 import { toCss } from "../src/css";
-import { DEVGLOW_PRESETS, DEVGLOW_SEED_HUES, DEVGLOW_TAGLINES, derivePreset } from "../src/devglow";
+import { DEVGLOW_DARK_CHROMA_CAP, DEVGLOW_PRESETS, DEVGLOW_SEED_HUES, DEVGLOW_TAGLINES, derivePreset, devglowPreset } from "../src/devglow";
 import { toDtcg } from "../src/dtcg";
 import { buildTheme } from "../src/theme";
 import { KEYS, parseLuaPalette, parseTaglines } from "../tools/devglow-parse";
@@ -109,5 +109,31 @@ describe("DEVGLOW_PRESETS", () => {
   test("dark canvas follows the palette: darkest palettes give a darker page than the default", () => {
     expect(okl(buildTheme(DEVGLOW_PRESETS.sage).dark.background).l).toBeLessThan(0.15);
     expect(okl(buildTheme(DEVGLOW_PRESETS.ember).dark.background).l).toBeGreaterThan(0.17);
+  });
+});
+
+describe("optional stronger dark neutral tint (cap for dark only)", () => {
+  const dark = { darkChromaCap: DEVGLOW_DARK_CHROMA_CAP };
+  test("proposed cap is 0.06 and the default presets are unchanged", () => {
+    expect(DEVGLOW_DARK_CHROMA_CAP).toBe(0.06);
+    for (const n of NAMES) {
+      expect(devglowPreset(n)).toEqual(DEVGLOW_PRESETS[n]);
+      expect((DEVGLOW_PRESETS[n].neutral as { chromaDark?: number }).chromaDark).toBeUndefined();
+    }
+  });
+  test("with the cap, dark chroma follows the palette up to the cap and light keeps the 0.03 cap", () => {
+    for (const n of NAMES) {
+      const base = DEVGLOW_PRESETS[n].neutral as { hue: number; chroma: number }, p = devglowPreset(n, dark).neutral as { hue: number; chroma: number; chromaDark?: number };
+      expect([n, p.hue, p.chroma]).toEqual([n, base.hue, base.chroma]);
+      expect(p.chromaDark!).toBeGreaterThanOrEqual(base.chroma);
+      expect(p.chromaDark!).toBeLessThanOrEqual(DEVGLOW_DARK_CHROMA_CAP);
+    }
+    expect((devglowPreset("sage", dark).neutral as { chromaDark?: number }).chromaDark).toBe(0); // grey stays grey
+    expect((devglowPreset("plum", dark).neutral as { chromaDark?: number }).chromaDark!).toBeGreaterThan(0.05); // raw 0.080 is cut to the cap
+  });
+  test("every preset with the stronger dark tint still passes every contrast gate (both primaryModes)", () => {
+    for (const n of NAMES) for (const primaryMode of ["accessible", "vivid"] as const) {
+      expect(check({ ...devglowPreset(n, dark), primaryMode }, `devglow-${n}-dark-cap`)).toEqual([]);
+    }
   });
 });

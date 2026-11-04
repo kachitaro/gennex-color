@@ -183,3 +183,22 @@ describe("neutral alpha (D6)", () => {
     }
   });
 });
+
+describe("chromaDark: a different step-9 chroma for dark mode", () => {
+  test("dark uses chromaDark, light is untouched, and omitting it changes nothing", () => {
+    const base: NeutralRamp = { hue: 120, chroma: 0.03 }, strong: NeutralRamp = { ...base, chromaDark: 0.06 };
+    expect(gen(strong, "light")).toEqual(gen(base, "light"));
+    expect(gen({ ...base, chromaDark: undefined }, "dark")).toEqual(gen(base, "dark"));
+    expect(gen(strong, "dark").steps[8].c).toBeCloseTo(0.06, 3);
+    expect(gen(base, "dark").steps[8].c).toBeCloseTo(0.03, 3);
+  });
+  test("the text and border rules still hold with a strong dark tint at every hue", () => {
+    const bad: string[] = [];
+    for (const h of seeds(3)) {
+      const s = gen({ hue: h, chroma: 0.03, chromaDark: 0.08, canvas: { dark: 0.14 } }, "dark"), x = s.hex;
+      for (const b of [0, 1, 2, 3]) { if (cr(x[10], x[b]) < 4.5) bad.push(`h${h} s11/s${b + 1}`); if (cr(x[11], x[b]) < 7) bad.push(`h${h} s12/s${b + 1}`); }
+      for (const surf of [[0], [0, 1]]) if (Math.min(...surf.map((i) => cr(neutralBorder(s, surf).hex, x[i]))) < 3) bad.push(`h${h} border`);
+    }
+    expect(bad).toEqual([]);
+  });
+});
