@@ -117,7 +117,7 @@ Ký hiệu: `N` = neutral đang chọn, `A` = hue chính (seed), `R/G/Y/B` = red
 | `destructive` | R9 | R9 | T1 |
 | `destructive-foreground` *(thêm, shadcn không có)* | `R-contrast` | `R-contrast` | T1 |
 | `border` | N6 | N6 | T3 (trang trí, chỉ kiểm ≥ 1.2:1) |
-| `input` | bậc N thấp nhất ≥ 3:1 trên background và card (đo: light **N9** 3.24, dark **N8** 3.00 → cần đệm) | idem, tính lại theo mode | T3 (D4) |
+| `input` | **solved**: neutral sáng nhất (dark: tối nhất) vẫn ≥ 3:1 trên mọi bề mặt nó nằm (`neutralBorder`, mục tiêu 3.05). Mặc định bề mặt = background và card: light `[N1]`, dark `[N1, N2]`. Đo: neutral light L 0.658 (3.07:1; N9 là 0.643 / 3.24:1), dark L 0.509 (3.30:1 trên N1; N8/N9 là 3.00–3.70) | idem, tính lại theo mode | T3 (D4) |
 | `ring` | bậc A đầu tiên trong `[9,10,11]` ≥ 3:1 trên background và card | idem | T3 |
 | `chart-1…5` | 5 hue lõi chọn bằng greedy max-min ΔE (loại hue chính); L ép xuống/lên đến ≥ 3:1 trên `card` | idem, theo mode | T3, H |
 | `sidebar` / `-foreground` | N2 / N12 | N2 / N12 | T1 |
@@ -129,6 +129,10 @@ Ký hiệu: `N` = neutral đang chọn, `A` = hue chính (seed), `R/G/Y/B` = red
 | `destructive-subtle/-text/-border` | R3 / R11 / R7 | idem | T2 |
 
 Nguyên tắc: **cùng một bảng ánh xạ**, khác biệt dark nằm ở (a) giá trị primitive từ bảng L/C dark riêng (§4.2), (b) các hàng in đậm (elevation `card/popover`, `input`/`ring` tính lại, `X-text` dùng step 11 của dark), (c) `canvas`. Nguồn gốc quy ước: Radix `aliasing` ("mutable aliases": panel = white ở light, `slate-2` ở dark; nhiều alias trỏ cùng một step khi cần).
+
+**Tuỳ chọn theme `pageStep: 2` ("page = s2")**: mặc định page = N1 (card = N1 ở light, N2 ở dark). Với `pageStep: 2`: `background` = N2; `card`/`popover` = N1 ở light (card sáng hơn nền) và N3 ở dark. `input` và `ring` được tính lại cho cặp bề mặt mới.
+
+Giới hạn của viền input: 3:1 trên nền gần trắng buộc L ≤ ~0.66, nên "nhẹ hơn" chỉ được thêm ~0.015 L ở light (0.643 → 0.658); dark nhẹ hơn nhiều (3.70 → 3.30). Muốn viền nhẹ hơn nữa phải bỏ 3:1 (D4 "mềm", dựa vào label/nền ô nhập để nhận diện theo WCAG 1.4.11) — chưa cài, cần bạn chốt.
 
 ### 3.4 L3 — Theme
 
@@ -277,13 +281,13 @@ Pha màu: `C_n = C9neutral · p_n` với `p` = trung bình profile của `slate/
 |---|---|---|---|
 | `cool` | 255° | 0.016 | Radix slate (C 0.016, h 248–286); Tailwind slate 257.4, mist 213.5 |
 | `neutral` | — | 0 | Radix gray; shadcn `neutral` |
-| `warm` | 70° | 0.012 | Radix sand (h 106, C 0.010); Tailwind stone 58, taupe 43 — **số này là chọn của tôi**, duyệt bằng mắt |
+| `warm` | 68° | 0.014 (profile phẳng hơn, s1 C ≈ 0.006) | step 1 light `oklch(0.975 0.006 68)` (`canvas.light` = 0.975, giấy ấm); Radix sand (h 106, C 0.010), Tailwind stone 58, taupe 43 — **số này là chọn của tôi**, duyệt bằng mắt |
 
 Ràng buộc đo được trên `gray` (light/dark): N11 trên N1…N4 = 5.77 / 5.62 / 5.19 / 4.83 (light), 9.11 / 8.48 / 7.67 / 6.92 (dark) → `muted-foreground` = N11 đạt 4.5 trên background, card, muted, accent; **N5 (pressed) rớt**: N11 trên N5 = 4.48 (light) → chữ trên trạng thái pressed dùng N12. N9 trên N1 = 3.24 (light), N8 trên N1 = 3.00 (dark) → `input` cần bậc tính lại và đệm.
 
 Tên ramp tránh trùng tên Radix (slate/sand…) để khỏi nhầm giá trị khác nhau cùng tên.
 
-Cài đặt (`src/neutral.ts`): L lấy bảng Radix `gray` làm tròn 3 chữ số, chroma = `chroma_ramp · p_n` với `p` = 0.09, 0.15, 0.26, 0.353, 0.447, 0.54, 0.693, 0.847, 1, 0.92, 0.84, 0.70 (đúng các điểm đã đo ở trên, còn lại nội suy tuyến tính), không cần bước solve vì bảng đã thỏa N2. `cool` = 255° / C 0.016, `warm` = 70° / C 0.012, `auto` = hue seed / C 0.016 (D5). Alpha (D6): với mỗi bậc, alpha tối thiểu để màu nền-alpha nằm trong 0–255 rồi giải màu; hướng tối/sáng tự ra từ dữ liệu. Alpha đo trên sRGB, chưa có P3 (O4).
+Cài đặt (`src/neutral.ts`): L lấy bảng Radix `gray` làm tròn 3 chữ số, chroma = `chroma_ramp · p_n` với `p` = 0.09, 0.15, 0.26, 0.353, 0.447, 0.54, 0.693, 0.847, 1, 0.92, 0.84, 0.70 (đúng các điểm đã đo ở trên, còn lại nội suy tuyến tính); ramp có thể ghi đè `tint` (warm dùng profile phẳng hơn: 0.43 … 1 … 0.74) và `canvas` (L bậc 1 theo mode; bậc 1–8 dịch cùng một delta, §3.4). Sau khi dịch canvas, s11/s12 được đẩy về phía chữ tới khi đạt N2. `cool` = 255° / C 0.016, `warm` = 68° / C 0.014, `auto` = hue seed / C 0.016 (D5, giữ nguyên). Alpha (D6): với mỗi bậc, alpha tối thiểu để màu nền-alpha nằm trong 0–255 rồi giải màu; hướng tối/sáng tự ra từ dữ liệu. Alpha đo trên sRGB, chưa có P3 (O4).
 
 ### 5.3 Tên phụ cho hue (nhãn slider)
 
@@ -339,8 +343,8 @@ Mọi test quét: **12 hue lõi × 3 neutral × 2 mode** (36 tổ hợp × 2) + 
 | R1 | Guard độ gần Radix (devDependency `@radix-ui/colors@3.0.0`): ΔE_OK trung bình 12 cặp ở §4.7 | ≤ 0.035 | 0.022 / 0.020 |
 | R2 | Guard neutral gần Radix: `neutral` ~ gray, `cool` ~ slate (ΔE_OK trung bình 12 bậc) | ≤ 0.02 | 0.0000 / 0.0043 (light), 0.0000 / 0.0031 (dark) |
 | N1 | Neutral (3 ramp cố định + `auto` mọi hue nguyên 0–359, cả hai mode): 12 bậc, trong sRGB, L đơn điệu (light giảm, dark tăng), ΔL ≥ 0.008, chroma đỉnh ở bậc 9; `neutral` chroma = 0; `auto` hue = seed, chroma ≤ 0.016 | — | `test/neutral.test.ts` |
-| N2 | Chữ neutral: s11 ≥ 4.5 và s12 ≥ 7 trên **s1–s4** (background, card, muted, accent; chặt hơn A3 vì `muted-foreground` = N11 phải đạt trên cả `accent` = N4) | 4.5 / 7 | min 4.77 / 12.26 (mọi ramp, 360 seed `auto`, 2 mode) |
-| N3 | Viền: s9 ≥ 3:1 trên s1 và s2 (D4 `input` nghiêm, T3 `ring`) | 3 | min **3.12** (light, `auto` 141°, trên s2): biên mỏng |
+| N2 | Chữ neutral: s11 ≥ 4.5 và s12 ≥ 7 trên **s1–s4** (background, card, muted, accent; chặt hơn A3 vì `muted-foreground` = N11 phải đạt trên cả `accent` = N4); gồm `warm` (canvas 0.975) và canvas tuỳ ý | 4.5 / 7 | min 4.61 / 12.26 (mọi ramp, 360 seed `auto`, 2 mode) |
+| N3 | Viền input (`neutralBorder`): ≥ 3:1 trên mọi bề mặt của nó (`[1]`, `[1,2]`, `[2]`), lớn nhất 3.2:1 (không nặng hơn cần thiết), không nặng hơn N9 khi N9 đã đạt 3.05 | 3 (solve 3.05) | min **3.050** (dark, `auto` 271°, `[1]`): biên mỏng. N9 một mình chỉ còn 3.007 trên s1/s2 ở `warm` light, nên không còn dùng N9 làm viền |
 | N4 | `auto` liên tục theo seed: ΔE_OK mọi bậc giữa h và h+1° | < 0.002 | < 0.002 |
 | N5 | Alpha neutral: composite (sRGB source-over) lên s1 tái tạo từng bậc ±1/255, alpha ∈ [0,1], bậc 1 trong suốt, không giảm theo bậc, hướng tối (light) / sáng (dark); `BLACK_ALPHA`/`WHITE_ALPHA` = Radix 3.0.0; `black-a11/a12` trên s1 light và `white-a11/a12` trên s1 dark đạt 4.5 / 7 | ±1 mức | sai số max 0.45 mức |
 | G | Golden snapshot 12 hue × 2 mode × 2 gamut (hex + oklch) để đổi đường cong phải qua review | — | — |

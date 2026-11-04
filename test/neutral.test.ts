@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import * as R from "@radix-ui/colors";
-import { AUTO_CHROMA, BLACK_ALPHA, NEUTRAL_RAMPS, WHITE_ALPHA, autoRamp, generateNeutral, neutralAlpha, type NeutralRamp, type NeutralRampName } from "../src/neutral";
+import { AUTO_CHROMA, BLACK_ALPHA, NEUTRAL_RAMPS, WHITE_ALPHA, autoRamp, generateNeutral, neutralAlpha, neutralBorder, type NeutralRamp, type NeutralRampName } from "../src/neutral";
 import type { Mode } from "../src/scale";
 import { cr, dE, hueGap, inSrgb, lum, seeds } from "./util";
 
@@ -70,10 +70,46 @@ describe("A3 text steps on neutral (s1-s4 = background, card, muted, accent surf
     }
     expect(bad).toEqual([]);
   });
-  test("border step 9 is >= 3:1 on steps 1 and 2 (D4 strict input border / T3 ring)", () => {
+  test("input border is the LIGHTEST color that is still >= 3:1 on its surfaces (D4 strict, not heavier than needed)", () => {
     for (const [label, ramp] of ALL) for (const m of MODES) {
-      const x = gen(ramp, m).hex;
-      for (const b of [0, 1]) expect([label, m, b + 1, cr(x[8], x[b]) >= 3]).toEqual([label, m, b + 1, true]);
+      const s = gen(ramp, m);
+      for (const surfaces of [[0], [0, 1], [1]]) {
+        const b = neutralBorder(s, surfaces).hex;
+        const worst = Math.min(...surfaces.map((i) => cr(b, s.hex[i])));
+        expect([label, m, surfaces.join(), worst >= 3]).toEqual([label, m, surfaces.join(), true]);
+        expect([label, m, surfaces.join(), worst <= 3.2]).toEqual([label, m, surfaces.join(), true]); // solved at the floor, no extra weight
+        const c9 = Math.min(...surfaces.map((i) => cr(s.hex[8], s.hex[i])));
+        if (c9 >= 3.05) expect([label, m, surfaces.join(), worst <= c9 + 1e-9]).toEqual([label, m, surfaces.join(), true]); // never heavier than step 9 when step 9 clears the 3.05 solve target
+      }
+    }
+  });
+  test("input border keeps the ramp tint (hue of step 9) and stays neutral-ish", () => {
+    for (const m of MODES) {
+      const s = gen("cool", m), b = neutralBorder(s, [0, 1]);
+      expect(b.oklch.c).toBeLessThanOrEqual(NEUTRAL_RAMPS.cool.chroma + 1e-9);
+      expect(hueGap(b.oklch.h, NEUTRAL_RAMPS.cool.hue)).toBeLessThan(0.01);
+    }
+  });
+});
+
+describe("warm is warmer (paper-like page) and canvas option", () => {
+  test("warm light step 1 is about oklch(0.975 0.006 68)", () => {
+    const s1 = gen("warm", "light").steps[0];
+    expect(Math.abs(s1.l - 0.975)).toBeLessThanOrEqual(0.003);
+    expect(Math.abs(s1.c - 0.006)).toBeLessThanOrEqual(0.0015);
+    expect(hueGap(s1.h, 68)).toBeLessThanOrEqual(3);
+  });
+  test("canvas shifts steps 1-8 by the same delta, preserving the ladder spacing; text steps still pass N2", () => {
+    const r: NeutralRamp = { hue: 40, chroma: 0.01, canvas: { light: 0.97, dark: 0.15 } };
+    for (const m of MODES) {
+      const b = gen("neutral", m), s = gen(r, m);
+      const delta = s.steps[0].l - b.steps[0].l;
+      expect(Math.abs(s.steps[0].l - (m === "light" ? 0.97 : 0.15))).toBeLessThan(1e-9);
+      for (let i = 0; i < 8; i++) expect(Math.abs(s.steps[i].l - b.steps[i].l - delta)).toBeLessThan(1e-9);
+      for (const k of [0, 1, 2, 3]) {
+        expect(cr(s.hex[10], s.hex[k])).toBeGreaterThanOrEqual(4.5);
+        expect(cr(s.hex[11], s.hex[k])).toBeGreaterThanOrEqual(7);
+      }
     }
   });
 });

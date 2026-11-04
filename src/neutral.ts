@@ -1,8 +1,16 @@
-import { toHex } from "./color";
+import { contrast, toHex } from "./color";
 import type { Mode, Oklch } from "./scale";
 
 export type NeutralRampName = "cool" | "neutral" | "warm";
-export interface NeutralRamp { hue: number; chroma: number }
+export interface NeutralRamp {
+  hue: number;
+  /** chroma at step 9 (the peak) */
+  chroma: number;
+  /** chroma per step relative to `chroma`; default TINT */
+  tint?: readonly number[];
+  /** lightness of step 1 per mode; steps 1-8 shift together (SPEC 3.4 canvas) */
+  canvas?: { light?: number; dark?: number };
+}
 export interface NeutralScale {
   /** steps[0] is step 1 ... steps[11] is step 12 */
   steps: Oklch[];
@@ -15,7 +23,8 @@ export interface AlphaStep { r: number; g: number; b: number; alpha: number; css
 export const NEUTRAL_RAMPS: Record<NeutralRampName, NeutralRamp> = {
   cool: { hue: 255, chroma: 0.016 },
   neutral: { hue: 0, chroma: 0 },
-  warm: { hue: 70, chroma: 0.012 },
+  // Paper-like: step 1 ~ oklch(0.975 0.006 68). Chroma is flatter across steps than the default profile.
+  warm: { hue: 68, chroma: 0.014, tint: [0.43, 0.48, 0.54, 0.6, 0.66, 0.72, 0.78, 0.86, 1, 0.93, 0.86, 0.74], canvas: { light: 0.975 } },
 };
 /** Chroma of the seed-following ramp (D5). */
 export const AUTO_CHROMA = 0.016;
@@ -29,11 +38,23 @@ const L: Record<Mode, number[]> = {
 // Chroma relative to step 9: mean slate/mauve/sand profile at steps 1,2,3,6,9,11,12; the rest interpolated linearly.
 const TINT = [0.09, 0.15, 0.26, 0.353, 0.447, 0.54, 0.693, 0.847, 1, 0.92, 0.84, 0.7];
 
+const T11 = 4.55, T12 = 7.1; // a hair above the 4.5 / 7 test floors (8-bit rounding)
+
 export function generateNeutral({ mode, ramp }: { mode: Mode; ramp: NeutralRampName | NeutralRamp }): NeutralScale {
-  const { hue, chroma } = typeof ramp === "string" ? NEUTRAL_RAMPS[ramp] : ramp;
-  const steps = L[mode].map((l, i): Oklch => ({ l, c: chroma * TINT[i], h: hue }));
+  const { hue, chroma, tint = TINT, canvas } = typeof ramp === "string" ? NEUTRAL_RAMPS[ramp] : ramp;
+  const shift = canvas?.[mode] === undefined ? 0 : canvas[mode]! - L[mode][0];
+  const steps = L[mode].map((l, i): Oklch => ({ l: i < 8 ? l + shift : l, c: chroma * tint[i], h: hue }));
+  // A shifted canvas moves surfaces toward the text color; keep s11/s12 passing on steps 1-4 (muted-foreground sits on accent = s4).
+  const dir = mode === "light" ? -1 : 1;
+  for (const [i, target] of [[10, T11], [11, T12]] as const) {
+    for (let k = 0; k < 200 && !ch4(steps, i, target); k++) steps[i] = { ...steps[i], l: steps[i].l + dir * 0.002 };
+  }
   return { steps, hex: steps.map(toHex) };
 }
+const ch4 = (steps: Oklch[], i: number, target: number) => {
+  const t = toHex(steps[i]);
+  return [0, 1, 2, 3].every((b) => contrast(t, toHex(steps[b])) >= target);
+};
 
 const ch = (hex: string) => { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
 
@@ -61,3 +82,23 @@ export function neutralAlpha(scale: NeutralScale): AlphaStep[] {
 /** Radix 3.0.0 black-a1..12 / white-a1..12. */
 export const BLACK_ALPHA: readonly number[] = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95];
 export const WHITE_ALPHA: readonly number[] = BLACK_ALPHA;
+
+
+/**
+ * Input border (D4 strict): the lightest neutral (darkest in dark mode) that is still >= 3:1 (WCAG 1.4.11) on every
+ * given surface step (0-based). Tint = step 9's hue/chroma. Surfaces default to step 1 only (card = page = step 1).
+ */
+export function neutralBorder(scale: NeutralScale, surfaces: number[] = [0]): { hex: string; oklch: Oklch } {
+  const { c, h } = scale.steps[8];
+  const light = scale.steps[0].l > 0.5;
+  const at = (l: number): Oklch => ({ l, c: Math.min(c, 0.02), h });
+  const pass = (l: number) => surfaces.every((i) => contrast(toHex(at(l)), scale.hex[i]) >= BORDER_TARGET);
+  let lo = 0.05, hi = 0.99; // light: lo passes, hi fails. dark: reverse roles
+  for (let i = 0; i < 40; i++) {
+    const m = (lo + hi) / 2;
+    if (light ? pass(m) : !pass(m)) lo = m; else hi = m;
+  }
+  const l = light ? lo : hi;
+  return { hex: toHex(at(l)), oklch: at(l) };
+}
+const BORDER_TARGET = 3.05; // above the 3:1 floor for 8-bit rounding
