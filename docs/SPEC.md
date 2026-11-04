@@ -111,6 +111,7 @@ Ký hiệu: `N` = neutral đang chọn, `A` = hue chính (seed), `R/G/Y/B` = red
 | `primary` | A9, **nhưng** dịch L khỏi A9 (tối hơn ở light, sáng hơn ở dark) đúng mức cần để đọc được như chữ (O9, mục 12) | idem | T1, T7 |
 | `primary-foreground` | foreground giải theo từng hue cho `primary`, hover và `primary/80` trên bề mặt | idem | T1, T7 |
 | `primary-hover` *(mở rộng)* | A10; khi `primary` đã dịch thì L ± 0.03 xa pivot hơn | idem | T1, T4 |
+| `primary-text` *(mở rộng)* | `accessible`: = `primary`. `vivid`: bậc/L sáng nhất của brand vẫn ≥ 4.5 làm chữ trên background, card, popover, muted, sidebar và `muted/50` | idem | T7 |
 | `secondary` / `-foreground` | N3 / N12 | N3 / N12 | T1 |
 | `muted` / `muted-foreground` | N3 / **N11** | N3 / **N11** | T1 ≥ 4.5 trên background, card, popover, muted, secondary, accent |
 | `accent` / `accent-foreground` | N4 / N12 | N4 / N12 | T1 |
@@ -506,6 +507,14 @@ Nguồn: registry `radix-nova` của `shadcn@4.23.0` (64 component `registry:ui`
 **Không gate** (chữ alpha của chính component, token không cứu được): `text-foreground/60` trên muted (tabs không hoạt động) min **4.09**, `text-muted-foreground/70` (trace) min **2.97**. Halo `ring-ring/50` và `ring-destructive/20|40` là trang trí; viền `border-ring` đầy đủ vẫn có khi focus.
 
 Hệ quả nhìn thấy: ở **light**, mọi `primary` đậm hơn s9 (ví dụ blue `#246dc1` → `#1b569b`, yellow `#e2da4d` → `#5a5619` olive đậm); ở **dark**, primary của red/blue/violet/magenta/pink sáng hơn (blue `#4290ef`), destructive `#f6a39c`; primary các hue sáng (yellow … cyan) giữ s9 ở dark.
+
+### 12.2 `primaryMode`: `accessible` (mặc định) | `vivid`
+
+`buildTheme({ primaryMode })`. **accessible** (mặc định, đã duyệt): `primary` tự nó đọc được làm chữ (như trên); `primary-text` = `primary`. **vivid**: `primary` giữ độ sáng cao nhất mà vẫn thỏa các nghĩa vụ foreground (chữ trên `primary`, hover, `primary/80`), không bị ép đọc được làm chữ; `primary-text` (đạt ≥ 4.5 trên background, card, popover, muted, sidebar, `muted/50`) gánh vai trò chữ. Cặp `text-primary` được miễn ở vivid (`textPrimary` trong `test/pairs.ts`), **mọi cặp khác vẫn đạt**; cặp `primary-text` luôn gate. `primary-text` được xuất ở CSS (`--primary-text`, `--color-primary-text` → utility `text-primary-text`) và DTCG.
+
+Tác dụng thực tế (đo): vivid trả lại màu sáng cho hue chữ-đen ở light (orange `#e77f36`, amber `#edb344`, yellow `#e2da4d`, lime, green, teal, cyan giữ step 9 thay vì `#83451a`/`#6c501a`/`#5a5619`…) và cho hue chữ-trắng ở dark (blue `#246dc1` thay vì `#4290ef`). Các hue chữ-trắng ở light (red, blue, violet, magenta, pink) **gần như không đổi** vì `primary-foreground` trên hover `primary/80` đã buộc tối. Ví dụ yellow light vivid: `primary` `#e2da4d` chỉ 1.4:1 trên nền trắng (không đọc được làm chữ), `primary-text` `#736f23`.
+
+5 component dùng `text-primary` làm chữ (đếm từ registry `radix-nova` của `shadcn@4.23.0`, mỗi nơi 1 chỗ): `item`, `empty`, `field` (link `[&>a:hover]:text-primary`), `badge` (variant link) và `button` (variant link). Ghi đè sang `primary-text` khi dùng vivid: `perl -pi -e 's/text-primary(?![\w-])/text-primary-text/g' src/components/ui/{item,empty,field,badge,button}.tsx` (lookahead không đụng `text-primary-foreground`; đã chạy thử trên example, Tailwind sinh `.text-primary-text`). Xem README.
 
 
 ## Phụ lục A — Cách tái lập số liệu
