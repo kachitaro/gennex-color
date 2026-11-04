@@ -1,5 +1,7 @@
 // Builds docs/preview/gennex-color.js (iife bundle of src/) and docs/preview/theme.html (live theme preview).
 // Run: bun scripts/preview-theme.ts
+import { ALPHA_TEXT, PAIRS } from "../test/pairs";
+
 const built = await Bun.build({ entrypoints: ["scripts/theme-entry.ts"], target: "browser", format: "iife", minify: true, outdir: "docs/preview", naming: "gennex-color.js" });
 if (!built.success) throw new Error(built.logs.join("\n"));
 
@@ -49,13 +51,11 @@ const STATUS = ["destructive","success","warning","info"];
 function lin(c){c/=255;return c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4}
 function lum(h){const n=parseInt(h.slice(1),16);return 0.2126*lin(n>>16&255)+0.7152*lin(n>>8&255)+0.0722*lin(n&255)}
 function cr(a,b){const x=lum(a),y=lum(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05)}
-// Same pair table as test/theme.test.ts
-function pairs(){const o=[],P=(f,b,m)=>o.push([f,b,m]);
- for(const bg of ["background","card","popover","muted","secondary","accent"]){P(bg==="card"?"card-foreground":bg==="popover"?"popover-foreground":"foreground",bg,7);P("muted-foreground",bg,4.5)}
- P("foreground","card",7);P("foreground","popover",7);P("secondary-foreground","secondary",4.5);P("accent-foreground","accent",4.5);P("primary-foreground","primary",4.5);P("primary-foreground","primary-hover",4.5);
- for(const s of STATUS){P(s+"-foreground",s,4.5);for(const bg of ["background","card",s+"-subtle"])P(s+"-text",bg,4.5);P(s+"-border","background",1.2)}
- for(const bg of ["background","card"]){P("ring",bg,3);P("input",bg,3);P("border",bg,1.2)}return o}
-const PAIRS = pairs();
+// The pair table is generated from test/pairs.ts when this page is built (one source of truth).
+const PAIRS = ${JSON.stringify(PAIRS)};
+const INFO = ${JSON.stringify(ALPHA_TEXT)};
+function mix(top,bottom,a){const ch=(h)=>{const n=parseInt(h.slice(1),16);return [n>>16&255,n>>8&255,n&255]};const t=ch(top),b=ch(bottom);return "#"+t.map((v,i)=>Math.round(v*a+b[i]*(1-a)).toString(16).padStart(2,"0")).join("")}
+function ratio(p,t){const surface=t[p.over||"background"];const bg=p.bgA?mix(t[p.bg],surface,p.bgA):t[p.bg];const fg=p.fgA?mix(t[p.fg],bg,p.fgA):t[p.fg];return cr(fg,bg)}
 function panel(mode, t){
  const vars = Object.entries(t).map(([k,v])=>"--"+k+":"+v).join(";");
  const alert = (s,label)=>'<div class="alert" style="background:var(--'+s+'-subtle);border-color:var(--'+s+'-border);color:var(--'+s+'-text)"><b style="background:var(--'+s+');color:var(--'+s+'-foreground)">'+label+'</b><span>'+label+' message, text in '+s+'-text</span></div>';
@@ -75,9 +75,10 @@ function render(){
  const status={}; for(const s of STATUS)status[s]=+$("s_"+s).value;
  const th=G.buildTheme({hue,kappa:+$("kappa").value,neutral:$("neutral").value,status,pageStep:+$("page").value});
  $("out").innerHTML=panel("light",th.light)+panel("dark",th.dark)+'<div id="checks"></div>';
- const lines=[];let bad=0;
- for(const m of ["light","dark"])for(const [f,b,min] of PAIRS){const r=cr(th[m][f],th[m][b]);const ok=r>=min;if(!ok)bad++;if(!ok||r<min+0.2)lines.push('<div class="'+(ok?"good":"bad")+'">'+(ok?"thin ":"FAIL ")+m+" "+f+" on "+b+" "+r.toFixed(2)+" (min "+min+")</div>")}
- $("checks").innerHTML="<b>"+(PAIRS.length*2-bad)+" / "+PAIRS.length*2+" pairs pass</b> (pairs within 0.2 of the gate are listed)"+lines.join("");
+ const lines=[];let bad=0,total=0;
+ for(const m of ["light","dark"])for(const p of PAIRS){if(p.modes&&!p.modes.includes(m))continue;total++;const r=ratio(p,th[m]);const ok=r>=p.min;if(!ok)bad++;if(!ok||r<p.min+0.2)lines.push('<div class="'+(ok?"good":"bad")+'">'+(ok?"thin ":"FAIL ")+m+" "+p.name+" "+r.toFixed(2)+" (min "+p.min+")"+(p.src?" ["+p.src+"]":"")+"</div>")}
+ const info=[];for(const m of ["light","dark"])for(const p of INFO)info.push('<div>'+m+" "+p.name+" "+ratio(p,th[m]).toFixed(2)+" ["+p.src+"]</div>");
+ $("checks").innerHTML="<b>"+(total-bad)+" / "+total+" pairs pass</b> (shadcn components included; pairs within 0.2 of the gate are listed)"+lines.join("")+"<br><b>Not gated</b> (translucent text inside shadcn components, 4.5 would be needed)"+info.join("");
 }
 for(const id of ["hue","kappa","neutral","page","s_destructive","s_success","s_warning","s_info"])$(id).addEventListener("input",render);
 $("hueN").addEventListener("input",()=>{$("hue").value=$("hueN").value;render()});
