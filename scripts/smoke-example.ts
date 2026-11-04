@@ -1,6 +1,7 @@
-// End-to-end smoke: pack the real package tarball, install it into examples/vite-app, build that Vite + Tailwind v4 +
-// shadcn app, and check the built CSS carries our theme. Run: bun run smoke:example
-import { readdirSync, readFileSync, mkdirSync, rmSync } from "node:fs";
+// End-to-end smoke: pack the real package tarball, install it into examples/vite-app the way a user would (dependencies
+// come transitively, nothing else is added), build that Vite + Tailwind v4 + shadcn app, and check the built CSS carries
+// our theme. Run: bun run smoke:example
+import { readFileSync, readdirSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 
 const run = (cmd: string[], cwd = ".") => {
   const r = Bun.spawnSync(cmd, { cwd, stdout: "pipe", stderr: "pipe" });
@@ -8,17 +9,23 @@ const run = (cmd: string[], cwd = ".") => {
   return r.stdout.toString();
 };
 
+const version = JSON.parse(readFileSync("package.json", "utf8")).version as string;
 run(["bun", "run", "build"]);
 rmSync(".pack", { recursive: true, force: true });
 mkdirSync(".pack");
 run(["bun", "pm", "pack", "--destination", ".pack"]);
-const mod = "examples/vite-app/node_modules/gennex-color";
-rmSync(mod, { recursive: true, force: true });
-mkdirSync(mod, { recursive: true });
-run(["tar", "-xzf", ".pack/gennex-color-0.0.0.tgz", "-C", mod, "--strip-components=1"]);
-run(["bun", "run", "build"], "examples/vite-app");
 
-const dir = "examples/vite-app/dist/assets";
+const ex = "examples/vite-app";
+const pkg = JSON.parse(readFileSync(`${ex}/package.json`, "utf8"));
+pkg.dependencies["gennex-color"] = `file:../../.pack/gennex-color-${version}.tgz`;
+writeFileSync(`${ex}/package.json`, JSON.stringify(pkg, null, 2) + "\n");
+rmSync(`${ex}/bun.lock`, { force: true });
+rmSync(`${ex}/node_modules/gennex-color`, { recursive: true, force: true });
+run(["bun", "install"], ex);
+if (!readdirSync(`${ex}/node_modules`).includes("culori")) throw new Error("culori was not installed as a dependency of the tarball");
+run(["bun", "run", "build"], ex);
+
+const dir = `${ex}/dist/assets`;
 const css = readFileSync(`${dir}/${readdirSync(dir).find((f) => f.endsWith(".css"))!}`, "utf8");
 // Lightning CSS rewrites oklch(0.99 ..) as oklch(99% ..) and drops leading zeros, so compare numerically.
 const parse = (v: string) => { const [l, c, h] = v.trim().split(/\s+/); return [l.endsWith("%") ? parseFloat(l) / 100 : parseFloat(l), parseFloat(c), parseFloat(h)]; };

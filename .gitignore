@@ -1,3 +1,4 @@
 node_modules/
 dist/
 .pack/
+examples/vite-app/bun.lock
