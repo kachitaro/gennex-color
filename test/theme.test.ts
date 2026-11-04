@@ -23,16 +23,24 @@ describe("token set (C1, D7)", () => {
       }
     }
   });
-  test("brand is any seed: primary equals that seed's step 9; status hues are overridable", () => {
+  test("brand is any seed: primary keeps the seed hue and moves from step 9 only toward the text pole (darker in light, lighter in dark)", () => {
     for (const hue of [40, 64, 217.5]) {
       const th = buildTheme({ hue });
       for (const m of MODES) {
-        const s = generateScale({ hue, mode: m });
-        expect(th[m].primary).toBe(s.hex[8]);
-        expect(th[m]["primary-hover"]).toBe(s.hex[9]);
-        expect(th[m]["primary-foreground"]).toBe(s.foreground);
+        const s = generateScale({ hue, mode: m }), p = okl(th[m].primary);
+        expect([hue, m, m === "light" ? p.l <= s.steps[8].l + 0.002 : p.l >= s.steps[8].l - 0.002]).toEqual([hue, m, true]);
+        expect(Math.min(Math.abs(p.h - hue), 360 - Math.abs(p.h - hue))).toBeLessThan(2.5);
+        expect(th[m]["primary-hover"]).not.toBe(th[m].primary);
       }
     }
+    // O9: lifted only when needed. A bright brand on a dark page already reads as text, so it keeps step 9 and hover step 10.
+    const y = generateScale({ hue: 106, mode: "dark" }), yt = buildTheme({ hue: 106 }).dark;
+    expect([yt.primary, yt["primary-hover"]]).toEqual([y.hex[8], y.hex[9]]);
+    // ...but red in dark is too dark to be text on the page, so primary and destructive get lighter.
+    const red = buildTheme({ hue: 25 }).dark, redScale = generateScale({ hue: 25, mode: "dark" });
+    expect(okl(red.destructive).l).toBeGreaterThan(redScale.steps[8].l);
+    expect(okl(red.primary).l).toBeGreaterThan(redScale.steps[8].l);
+    expect(cr(red.destructive, red.background)).toBeGreaterThanOrEqual(4.5);
     const w = buildTheme({ hue: 255, status: { warning: 60 } });
     for (const m of MODES) {
       const s = generateScale({ hue: 60, mode: m });

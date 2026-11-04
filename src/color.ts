@@ -43,3 +43,10 @@ export function deltaE(a: string, b: string): number {
   const [p, q] = [toOklab(a)!, toOklab(b)!];
   return Math.hypot(p.l - q.l, p.a - q.a, p.b - q.b);
 }
+
+/** sRGB-space source-over: `top` at opacity `a` over `bottom`, rounded to 8 bits (what a browser paints). */
+export function mixHex(top: string, bottom: string, a: number): string {
+  const ch = (h: string) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const [t, b] = [ch(top), ch(bottom)];
+  return "#" + t.map((v, i) => Math.round(v * a + b[i] * (1 - a)).toString(16).padStart(2, "0")).join("");
+}

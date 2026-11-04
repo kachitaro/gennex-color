@@ -108,14 +108,14 @@ Ký hiệu: `N` = neutral đang chọn, `A` = hue chính (seed), `R/G/Y/B` = red
 | `foreground` | N12 | N12 | T1 ≥ 7 |
 | `card` / `card-foreground` | N1 / N12 | **N2** / N12 | T1, T6 |
 | `popover` / `popover-foreground` | N1 / N12 | **N2** / N12 | T1, T6 |
-| `primary` | A9 | A9 | T1 |
-| `primary-foreground` | `A-contrast` | `A-contrast` | T1 |
-| `primary-hover` *(mở rộng)* | A10 | A10 | T1 |
+| `primary` | A9, **nhưng** dịch L khỏi A9 (tối hơn ở light, sáng hơn ở dark) đúng mức cần để đọc được như chữ (O9, mục 12) | idem | T1, T7 |
+| `primary-foreground` | foreground giải theo từng hue cho `primary`, hover và `primary/80` trên bề mặt | idem | T1, T7 |
+| `primary-hover` *(mở rộng)* | A10; khi `primary` đã dịch thì L ± 0.03 xa pivot hơn | idem | T1, T4 |
 | `secondary` / `-foreground` | N3 / N12 | N3 / N12 | T1 |
 | `muted` / `muted-foreground` | N3 / **N11** | N3 / **N11** | T1 ≥ 4.5 trên background, card, popover, muted, secondary, accent |
 | `accent` / `accent-foreground` | N4 / N12 | N4 / N12 | T1 |
-| `destructive` | R9 | R9 | T1 |
-| `destructive-foreground` *(thêm, shadcn không có)* | `R-contrast` | `R-contrast` | T1 |
+| `destructive` | R9, dịch L như `primary` (đọc được như chữ trên bề mặt, trên nền tint `destructive/10…30` và chữ `/80…/90`) | idem | T1, T7 |
+| `destructive-foreground` *(thêm, shadcn không có)* | foreground giải theo hue cho `destructive` | idem | T1 |
 | `border` | N6 | N6 | T3 (trang trí, chỉ kiểm ≥ 1.2:1) |
 | `input` | **solved**: neutral sáng nhất (dark: tối nhất) vẫn ≥ 3:1 trên mọi bề mặt nó nằm (`neutralBorder`, mục tiêu 3.05). Mặc định bề mặt = background và card: light `[N1]`, dark `[N1, N2]`. Đo: neutral light L 0.658 (3.07:1; N9 là 0.643 / 3.24:1), dark L 0.509 (3.30:1 trên N1; N8/N9 là 3.00–3.70) | idem, tính lại theo mode | T3 (D4) |
 | `ring` | bậc A đầu tiên trong `[9,10,11]` ≥ 3:1 trên background và card | idem | T3 |
@@ -481,7 +481,7 @@ Quyết định nhỏ tôi đã tự chọn (đánh dấu để bạn soát): hu
 | O6 | Đo trên sRGB là chính | Prototype P3 chỉ kiểm step 9 vs foreground | P1 |
 | O7 | Prototype không nằm trong repo | Số liệu không tái lập được từ repo cho tới khi viết code | Phase 1 chuyển các sweep thành test; giữ Phụ lục A |
 | O8 | Hue drift Radix dark không nhất quán | Không dùng để chỉnh | — |
-| O9 | **shadcn dùng `text-primary` / `text-destructive` làm màu chữ**, nhưng `primary`/`destructive` của ta là màu nền đặc (s9) kèm foreground riêng | Đo trên 12 preset: chữ `primary`/`destructive` trên background dưới 4.5:1 ở **24/48** mẫu, tất cả ở dark (blue dark primary 3.63, destructive 3.75; light đạt 4.9–5.1). shadcn dark mặc định dùng destructive sáng hơn (L 0.704). Nhìn thấy ở nút `variant="destructive"` (chữ đỏ trên nền đỏ mờ) và link `text-primary` | **Chưa sửa, cần bạn chốt**: (a) ở dark, `primary`/`destructive` lấy bậc sáng hơn để đạt 4.5:1 làm chữ (đổi cặp foreground, nút solid sáng hơn); (b) giữ s9 và coi dùng làm chữ là sai, hướng dẫn dùng `*-text` (cần override component); (c) thêm token riêng, không có tên shadcn tương ứng |
+| O9 | **shadcn dùng `text-primary` / `text-destructive` làm màu chữ**, nhưng `primary`/`destructive` là màu nền đặc | **Đã sửa (phương án a, 2026-11-04)** trong `src/theme.ts` (`solidWithText`) | Sửa sau rà registry (mục 12). Bản đầu nhảy theo bậc s9–s12 làm mọi primary ở light thành s12 gần đen; đã đổi sang dịch L liên tục. Đã đo trước khi sửa: 24/48 mẫu primary/destructive dưới 4.5 làm chữ, **gồm 7 mẫu light (primary của 7 hue sáng như yellow), không chỉ dark như tôi báo ban đầu** |
 
 ---
 
@@ -496,6 +496,17 @@ Quyết định nhỏ tôi đã tự chọn (đánh dấu để bạn soát): hu
 **Package** (`gennex-color@0.0.0`, chưa publish): `exports` gồm `.` (ESM + `.d.mts`), `./css/<preset>.css`, `./tokens/<preset>.tokens.json`. `bun run build` = tsdown + `scripts/build-assets.ts` (12 preset, tên theo hue lõi: red … pink, neutral = gray). Preset ngoài bộ này: gọi `buildTheme`. Preset devglow (D8/D9) chưa làm.
 
 **Smoke**: `bun run smoke` (dist JS + file CSS/JSON khớp hàm), `bun run smoke:example` (đóng gói tarball thật bằng `bun pm pack`, giải vào `examples/vite-app` — Vite + Tailwind v4 + shadcn `radix-nova` Button/Input/Card sinh bằng `shadcn@4.23.0` CLI — build, kiểm 102 biến theme có trong CSS đã build, utility `bg-primary`… được sinh, theme mặc định shadcn không rò rỉ). Đã xem trực quan light và dark bằng Chrome headless.
+
+## 12.1 Rà registry shadcn (O9)
+
+Nguồn: registry `radix-nova` của `shadcn@4.23.0` (64 component `registry:ui`, tải 2026-11-04). Token dùng làm **chữ** (số component): `muted-foreground` 35, `foreground` 24, `popover-foreground` 13, `destructive` 12, `accent-foreground` 5, `primary` 5, `primary-foreground` 9, `secondary-foreground` 3, `card-foreground` 3, `sidebar-*` 1, `background` 2 (tooltip, kbd). Nền alpha: `destructive/10|20|30` (8 component), `primary/80` hover (3), `secondary/80` (2), `muted/50` (12), `input/30|50|80` (15+), `primary/5|10`, `background/10|20` (kbd). Chữ alpha: `destructive/80|90`, `foreground/60` (tabs), `muted-foreground/70` (trace), `sidebar-foreground/70`. Viền/ring: `border-ring` + `ring-ring/50` (focus), `aria-invalid:border-destructive` + `ring-destructive/20|40`, `ring-foreground/10` (popover), `border-primary` (checkbox/radio đã chọn). Màu ngoài token: `bg-black/10` (dialog, sheet, drawer, overlay), `bg-white` (slider).
+
+**T7** (`test/pairs.ts`, gate): `text-primary` / `text-destructive` ≥ 4.5 trên background, card, popover, muted, sidebar và trên `muted/50`; `destructive` trên `destructive/10|20` (light) và `/20|30` (dark) phủ lên background/card/popover; `primary-foreground` trên `primary/80` và `secondary-foreground` trên `secondary/80`; `foreground`/`muted-foreground` trên `muted/50`, `primary/5`, `input/30` (dark); `background` trên `foreground` (tooltip) và trên `background/20|10` phủ lên foreground (kbd); chữ alpha `destructive/90`, `/80` (trên card) và `sidebar-foreground/70`; `destructive` ≥ 3:1 làm viền `aria-invalid`. Min đo được trên mọi seed (neutral auto): 4.550 (`hover:bg-primary/80`), 4.559 (`destructive` trên tint), 4.565 (`/80`); hover ΔE min 0.028.
+
+**Không gate** (chữ alpha của chính component, token không cứu được): `text-foreground/60` trên muted (tabs không hoạt động) min **4.09**, `text-muted-foreground/70` (trace) min **2.97**. Halo `ring-ring/50` và `ring-destructive/20|40` là trang trí; viền `border-ring` đầy đủ vẫn có khi focus.
+
+Hệ quả nhìn thấy: ở **light**, mọi `primary` đậm hơn s9 (ví dụ blue `#246dc1` → `#1b569b`, yellow `#e2da4d` → `#5a5619` olive đậm); ở **dark**, primary của red/blue/violet/magenta/pink sáng hơn (blue `#4290ef`), destructive `#f6a39c`; primary các hue sáng (yellow … cyan) giữ s9 ở dark.
+
 
 ## Phụ lục A — Cách tái lập số liệu
 

@@ -1,7 +1,7 @@
-import { contrast, deltaE } from "./color";
+import { contrast, deltaE, luminance, maxChroma, mixHex, toHex } from "./color";
 import { CORE_HUES } from "./hues";
 import { autoRamp, generateNeutral, neutralBorder, type NeutralRamp, type NeutralRampName } from "./neutral";
-import { generateScale, type Mode } from "./scale";
+import { Y_PIVOT, foregroundFor, generateScale, type Mode, type Scale } from "./scale";
 
 export type StatusName = "destructive" | "success" | "warning" | "info";
 export interface ThemeOptions {
@@ -36,6 +36,30 @@ export const TOKEN_NAMES: readonly string[] = [
 ];
 
 const RING_TARGET = 3.05; // above the 3:1 floor for 8-bit rounding
+const TEXT_TARGET = 4.55; // above the 4.5:1 floor for 8-bit rounding
+
+/**
+ * A solid color that shadcn also uses as TEXT (`text-primary`, `text-destructive`). Step 9 (and its hover, step 10) is kept
+ * when it already reads as text on every surface and carries a foreground on itself, on its hover and on its translucent
+ * form (`fgBgs`). Otherwise L moves from step 9 toward the text pole (darker in light, lighter in dark) just far enough,
+ * keeping hue and kappa-scaled chroma; the hover is 0.03 L further away from the pivot, like in the scale.
+ */
+function solidWithText(base: Scale, hue: number, mode: Mode, kappa: number, textOk: (c: string) => boolean, fgBgs: (c: string, hover: string) => string[]) {
+  const [s9, s10] = [base.hex[8], base.hex[9]];
+  const fg0 = foregroundFor(hue, fgBgs(s9, s10));
+  if (textOk(s9) && fg0.ok) return { solid: s9, hover: s10, foreground: fg0.hex };
+  const at = (l: number) => { const c = { l, c: kappa * maxChroma(l, hue), h: hue }; return { c, hex: toHex(c) }; };
+  const dir = mode === "light" ? -1 : 1;
+  for (let l = base.steps[8].l + dir * 0.005; l > 0.12 && l < 0.97; l += dir * 0.005) {
+    const s = at(l);
+    if (!textOk(s.hex)) continue;
+    const hover = at(luminance(s.c) < Y_PIVOT ? l - 0.03 : l + 0.03).hex;
+    const fg = foregroundFor(hue, fgBgs(s.hex, hover));
+    if (fg.ok) return { solid: s.hex, hover, foreground: fg.hex };
+  }
+  const fg = foregroundFor(hue, fgBgs(base.hex[11], base.hex[10]));
+  return { solid: base.hex[11], hover: base.hex[10], foreground: fg.hex };
+}
 
 function modeTokens(o: ThemeOptions, mode: Mode): TokenMap {
   const ramp = o.neutral === "auto" ? autoRamp(o.hue) : (o.neutral ?? "neutral");
@@ -54,21 +78,39 @@ function modeTokens(o: ThemeOptions, mode: Mode): TokenMap {
   // First of [s9..s12] that clears 3:1 on every surface it can sit on (pale brands such as yellow fall back to s11).
   const solid = (hex: string[], on: string[]) => hex.slice(8).find((c) => on.every((s) => contrast(c, s) >= RING_TARGET))!;
   const ring = solid(brand.hex, surfaces);
+  // O9: shadcn renders text-primary / text-destructive as TEXT on surfaces and on translucent tints (bg-destructive/10, ...).
+  const muted = N[2];
+  const textSurfaces = [background, card, muted, sidebar];
+  const kappa = o.kappa ?? 0.85;
+  const primary = solidWithText(
+    brand, o.hue, mode, kappa,
+    (c) => textSurfaces.every((s) => contrast(c, s) >= TEXT_TARGET) && [background, card].every((s) => contrast(c, mixHex(muted, s, 0.5)) >= TEXT_TARGET),
+    (c, h) => [c, h, ...[background, card, sidebar].map((s) => mixHex(c, s, 0.8))], // hover:bg-primary/80 keeps its text
+  );
+  const tints = mode === "light" ? [0.1, 0.2] : [0.2, 0.3]; // bg-destructive/10 (+hover /20); dark:/20 (+hover /30)
+  const destructiveScale = generateScale({ hue: o.status?.destructive ?? STATUS_HUES.destructive, mode });
+  const destructive = solidWithText(
+    destructiveScale, o.status?.destructive ?? STATUS_HUES.destructive, mode, 0.85,
+    (c) => textSurfaces.every((s) => contrast(c, s) >= TEXT_TARGET) && tints.every((a) => [background, card].every((s) => contrast(c, mixHex(c, s, a)) >= TEXT_TARGET))
+      && [0.8, 0.9].every((a) => contrast(mixHex(c, card, a), card) >= TEXT_TARGET), // alert description /90, attachment error /80
+    (c) => [c],
+  );
   const t: TokenMap = {
     background, foreground: N[11],
     card, "card-foreground": N[11], popover: card, "popover-foreground": N[11],
-    primary: brand.hex[8], "primary-foreground": brand.foreground, "primary-hover": brand.hex[9],
+    primary: primary.solid, "primary-foreground": primary.foreground, "primary-hover": primary.hover,
     secondary: N[2], "secondary-foreground": N[11],
     muted: N[2], "muted-foreground": N[10],
     accent: N[3], "accent-foreground": N[11],
     border: N[5], input: neutralBorder(neutral, [...new Set([bgIdx, cardIdx, 1])]).hex, ring,
-    sidebar, "sidebar-foreground": N[11], "sidebar-primary": brand.hex[8], "sidebar-primary-foreground": brand.foreground,
+    sidebar, "sidebar-foreground": N[11], "sidebar-primary": primary.solid, "sidebar-primary-foreground": primary.foreground,
     "sidebar-accent": N[3], "sidebar-accent-foreground": N[11], "sidebar-border": N[5], "sidebar-ring": ring,
   };
   chartColors(o, mode, brand.hex[8], [background, card]).forEach((c, i) => (t[`chart-${i + 1}`] = c));
   for (const s of STATUS_NAMES) {
-    const sc = generateScale({ hue: o.status?.[s] ?? STATUS_HUES[s], mode });
-    Object.assign(t, { [s]: sc.hex[8], [`${s}-foreground`]: sc.foreground, [`${s}-subtle`]: sc.hex[2], [`${s}-text`]: sc.hex[10], [`${s}-border`]: sc.hex[6] });
+    const sc = s === "destructive" ? destructiveScale : generateScale({ hue: o.status?.[s] ?? STATUS_HUES[s], mode });
+    const solid = s === "destructive" ? destructive : { solid: sc.hex[8], foreground: sc.foreground };
+    Object.assign(t, { [s]: solid.solid, [`${s}-foreground`]: solid.foreground, [`${s}-subtle`]: sc.hex[2], [`${s}-text`]: sc.hex[10], [`${s}-border`]: sc.hex[6] });
   }
   return t;
 }

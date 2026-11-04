@@ -30,7 +30,7 @@ const dark = source.slice(source.indexOf(".dark {"), source.indexOf("@theme inli
 const decls = (b: string) => [...b.matchAll(/^\s+--([\w-]+): oklch\(([^)]*)\);$/gm)].map((m) => [m[1], parse(m[2])] as const);
 const miss = [...decls(root), ...decls(dark)].filter(([k, want]) => !(builtVars.get(k) ?? []).some((got) => got.every((x, i) => Math.abs(x - want[i]) < 1e-3)));
 if (miss.length) throw new Error(`theme variables missing from built CSS: ${miss.slice(0, 5).map((m) => m[0]).join(", ")} (+${miss.length})`);
-for (const cls of [".bg-primary", ".text-primary-foreground", ".bg-card", ".border-input", ".text-muted-foreground", ".bg-destructive"]) {
+for (const cls of [".bg-primary", ".text-primary-foreground", ".bg-card", ".border-input", ".text-muted-foreground", ".text-destructive", ".text-primary", ".bg-secondary", ".bg-destructive\\/10", ".aria-invalid\\:border-destructive"]) {
   if (!css.includes(cls)) throw new Error(`utility ${cls} not generated`);
 }
 if ((builtVars.get("primary") ?? []).some((v) => Math.abs(v[0] - 0.205) < 1e-3 && v[1] === 0)) throw new Error("shadcn default theme leaked into the build");

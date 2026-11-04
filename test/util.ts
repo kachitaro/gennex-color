@@ -34,3 +34,10 @@ export function maxChroma(l: number, h: number) {
 export const inSrgb = (s: { l: number; c: number; h: number }) => srgb({ mode: "oklch", ...s });
 export const hueGap = (a: number, b: number) => { const d = Math.abs(a - b) % 360; return Math.min(d, 360 - d); };
 export const seeds = (step: number) => Array.from({ length: Math.round(360 / step) }, (_, i) => i * step);
+
+/** sRGB-space source-over: `top` at opacity `a` over `bottom`, rounded to 8 bits (what a browser paints). */
+export function mix(top: string, bottom: string, a: number) {
+  const ch = (h: string) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const [t, b] = [ch(top), ch(bottom)];
+  return "#" + t.map((v, i) => Math.round(v * a + b[i] * (1 - a)).toString(16).padStart(2, "0")).join("");
+}

@@ -37,7 +37,7 @@ const ok = (l: number, c: number, h: number): Oklch => ({ l, c, h });
 
 // Luminance where pure white and pure black give equal contrast: (Y+0.05)^2 = 0.05*1.05, ~4.58:1 both ways.
 // Below it white text works, above it black works, so the hover step (L10) must move AWAY from it.
-const Y_PIVOT = Math.sqrt(0.05 * 1.05) - 0.05;
+export const Y_PIVOT = Math.sqrt(0.05 * 1.05) - 0.05;
 /** L at which a kappa-scaled color of this hue sits on the pivot luminance. */
 function pivotL(h: number, kappa: number) {
   let lo = 0.3, hi = 0.95;
@@ -95,13 +95,16 @@ export function generateScale({ hue, mode, kappa = 0.85 }: ScaleOptions): Scale 
   steps.push(solveText(dark ? 0.785 : 0.544, T11, dark ? 0.82 : 0.9));
   steps.push(solveText(dark ? 0.911 : 0.332, T12, dark ? 0.29 : 0.45));
   const hex = steps.map(toHex);
-  return { steps, hex, foreground: pickForeground(hex[8], hex[9], h) };
+  return { steps, hex, foreground: foregroundFor(h, [hex[8], hex[9]]).hex };
 }
 
-/** Prefer hue-tinted light/dark, fall back to pure white/black. Must pass on BOTH step 9 and 10. */
-function pickForeground(s9: string, s10: string, h: number): string {
+/**
+ * Foreground for a solid color that must stay readable on every given background: hue-tinted light/dark first, then pure
+ * white/black. `ok` is false when none reaches the target (the best candidate is still returned).
+ */
+export function foregroundFor(h: number, bgs: string[]): { hex: string; ok: boolean } {
   const cands: [string, boolean][] = [[toHex(ok(0.985, 0.012, h)), true], [toHex(ok(0.2, 0.03, h)), true], ["#ffffff", false], ["#000000", false]];
-  const scored = cands.map(([x, tint]) => ({ x, tint, cr: Math.min(contrast(x, s9), contrast(x, s10)) }));
+  const scored = cands.map(([x, tint]) => ({ x, tint, cr: Math.min(...bgs.map((b) => contrast(x, b))) }));
   const pass = scored.filter((s) => s.cr >= TFG).sort((a, b) => Number(b.tint) - Number(a.tint) || b.cr - a.cr);
-  return (pass[0] ?? scored.sort((a, b) => b.cr - a.cr)[0]).x;
+  return pass[0] ? { hex: pass[0].x, ok: true } : { hex: scored.sort((a, b) => b.cr - a.cr)[0].x, ok: false };
 }
