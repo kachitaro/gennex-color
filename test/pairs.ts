@@ -7,7 +7,7 @@ import { cr, mix } from "./util";
  *   B = bgA ? mix(t[bg], t[over ?? "background"], bgA) : t[bg]      (an alpha fill over a surface, e.g. bg-destructive/10)
  *   F = fgA ? mix(t[fg], B, fgA) : t[fg]                             (alpha text, e.g. text-destructive/90)
  */
-export interface Pair { name: string; fg: string; bg: string; min: number; fgA?: number; bgA?: number; over?: string; modes?: Mode[]; src?: string }
+export interface Pair { name: string; fg: string; bg: string; min: number; fgA?: number; bgA?: number; over?: string; modes?: Mode[]; src?: string; /** `primary` used as TEXT: exempt when primaryMode is "vivid" (primary-text takes over) */ textPrimary?: boolean }
 export const CHARTS = [1, 2, 3, 4, 5].map((i) => `chart-${i}`);
 const SURFACES = ["background", "card", "popover", "muted", "sidebar"];
 
@@ -45,9 +45,14 @@ export function pairs(): Pair[] {
 
   // --- shadcn components as shipped (O9): brand and destructive used as TEXT, and alpha fills ---
   // text-primary (link hover in item/empty/field) and text-destructive (field error, alert, trace, menu item) on every surface
-  for (const x of ["primary", "destructive"]) for (const s of SURFACES) P(x, s, 4.5, { src: "text-" + x });
-  P("primary", "muted", 4.5, { bgA: 0.5, over: "background", src: "item: text-primary on bg-muted/50" });
-  P("primary", "muted", 4.5, { bgA: 0.5, over: "card", src: "item: text-primary on bg-muted/50" });
+  for (const s of SURFACES) P("destructive", s, 4.5, { src: "text-destructive" });
+  for (const s of SURFACES) P("primary", s, 4.5, { src: "text-primary", textPrimary: true });
+  P("primary", "muted", 4.5, { bgA: 0.5, over: "background", src: "item: text-primary on bg-muted/50", textPrimary: true });
+  P("primary", "muted", 4.5, { bgA: 0.5, over: "card", src: "item: text-primary on bg-muted/50", textPrimary: true });
+  // primary-text: the token to use for text-primary in "vivid" mode (equals primary in "accessible")
+  for (const s of SURFACES) P("primary-text", s, 4.5, { src: "primary-text" });
+  P("primary-text", "muted", 4.5, { bgA: 0.5, over: "background", src: "primary-text on muted/50" });
+  P("primary-text", "muted", 4.5, { bgA: 0.5, over: "card", src: "primary-text on muted/50" });
   // bg-destructive/10 + text-destructive (light), dark:bg-destructive/20; hover /20 (light) and /30 (dark): button, badge, menu item, attachment
   for (const [mode, alphas] of [["light", [0.1, 0.2]], ["dark", [0.2, 0.3]]] as const)
     for (const a of alphas) for (const s of ["background", "card", "popover"]) P("destructive", "destructive", 4.5, { bgA: a, over: s, modes: [mode], src: "text-destructive on bg-destructive/N" });
@@ -91,10 +96,11 @@ export function ratio(p: Pair, t: TokenMap): number {
   return cr(fg, bg);
 }
 
-export function violations(label: string, t: TokenMap, mode: Mode): string[] {
+export function violations(label: string, t: TokenMap, mode: Mode, primaryMode: "accessible" | "vivid" = "accessible"): string[] {
   const bad: string[] = [];
   for (const p of PAIRS) {
     if (p.modes && !p.modes.includes(mode)) continue;
+    if (p.textPrimary && primaryMode === "vivid") continue;
     const r = ratio(p, t);
     if (r < p.min) bad.push(`${label}: ${p.name} ${r.toFixed(2)} < ${p.min}`);
   }
@@ -103,5 +109,5 @@ export function violations(label: string, t: TokenMap, mode: Mode): string[] {
 export const MODES: Mode[] = ["light", "dark"];
 export function check(o: ThemeOptions, label: string) {
   const th = buildTheme(o);
-  return MODES.flatMap((m) => violations(`${label} ${m}`, th[m], m));
+  return MODES.flatMap((m) => violations(`${label} ${m}`, th[m], m, o.primaryMode));
 }

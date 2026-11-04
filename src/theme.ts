@@ -15,6 +15,11 @@ export interface ThemeOptions {
   status?: Partial<Record<StatusName, number>>;
   /** 2 = page uses neutral step 2 (SPEC 3.3). Default 1. */
   pageStep?: 1 | 2;
+  /**
+   * "accessible" (default): `primary` itself reads as text (shadcn `text-primary`).
+   * "vivid": `primary` stays as bright as the other constraints allow; use `primary-text` where shadcn uses `text-primary`.
+   */
+  primaryMode?: "accessible" | "vivid";
 }
 /** token name -> sRGB hex */
 export type TokenMap = Record<string, string>;
@@ -27,7 +32,7 @@ export const STATUS_HUES: Record<StatusName, number> = { destructive: 25, succes
 const STATUS_SUFFIXES = ["", "-foreground", "-subtle", "-text", "-border"] as const;
 export const TOKEN_NAMES: readonly string[] = [
   "background", "foreground", "card", "card-foreground", "popover", "popover-foreground",
-  "primary", "primary-foreground", "primary-hover",
+  "primary", "primary-foreground", "primary-hover", "primary-text",
   "secondary", "secondary-foreground", "muted", "muted-foreground", "accent", "accent-foreground",
   "border", "input", "ring",
   "chart-1", "chart-2", "chart-3", "chart-4", "chart-5",
@@ -82,11 +87,12 @@ function modeTokens(o: ThemeOptions, mode: Mode): TokenMap {
   const muted = N[2];
   const textSurfaces = [background, card, muted, sidebar];
   const kappa = o.kappa ?? 0.85;
-  const primary = solidWithText(
-    brand, o.hue, mode, kappa,
-    (c) => textSurfaces.every((s) => contrast(c, s) >= TEXT_TARGET) && [background, card].every((s) => contrast(c, mixHex(muted, s, 0.5)) >= TEXT_TARGET),
-    (c, h) => [c, h, ...[background, card, sidebar].map((s) => mixHex(c, s, 0.8))], // hover:bg-primary/80 keeps its text
-  );
+  const primaryText = (c: string) => textSurfaces.every((s) => contrast(c, s) >= TEXT_TARGET) && [background, card].every((s) => contrast(c, mixHex(muted, s, 0.5)) >= TEXT_TARGET);
+  const primaryFgBgs = (c: string, h: string) => [c, h, ...[background, card, sidebar].map((s) => mixHex(c, s, 0.8))]; // hover:bg-primary/80 keeps its text
+  const vivid = o.primaryMode === "vivid";
+  // accessible: primary reads as text. vivid: primary is only held to its foreground duties, primary-text takes the text duty.
+  const primary = solidWithText(brand, o.hue, mode, kappa, vivid ? () => true : primaryText, primaryFgBgs);
+  const primaryAsText = vivid ? solidWithText(brand, o.hue, mode, kappa, primaryText, (c) => [c]).solid : primary.solid;
   const tints = mode === "light" ? [0.1, 0.2] : [0.2, 0.3]; // bg-destructive/10 (+hover /20); dark:/20 (+hover /30)
   const destructiveScale = generateScale({ hue: o.status?.destructive ?? STATUS_HUES.destructive, mode });
   const destructive = solidWithText(
@@ -98,7 +104,7 @@ function modeTokens(o: ThemeOptions, mode: Mode): TokenMap {
   const t: TokenMap = {
     background, foreground: N[11],
     card, "card-foreground": N[11], popover: card, "popover-foreground": N[11],
-    primary: primary.solid, "primary-foreground": primary.foreground, "primary-hover": primary.hover,
+    primary: primary.solid, "primary-foreground": primary.foreground, "primary-hover": primary.hover, "primary-text": primaryAsText,
     secondary: N[2], "secondary-foreground": N[11],
     muted: N[2], "muted-foreground": N[10],
     accent: N[3], "accent-foreground": N[11],

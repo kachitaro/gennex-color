@@ -54,8 +54,8 @@ describe("token set (C1, D7)", () => {
 describe("all text/surface pairs pass the gate (T1-T3)", () => {
   test("12 core hues x 4 neutrals x page=s1/s2 x kappa 0.85/0.4, both modes", () => {
     const bad: string[] = [];
-    for (const { name, hue } of CORE_HUES) for (const neutral of NEUTRALS) for (const pageStep of [1, 2] as const) for (const kappa of [0.85, 0.4]) {
-      bad.push(...check({ hue, neutral, pageStep, kappa }, `${name} ${neutral} p${pageStep} k${kappa}`));
+    for (const { name, hue } of CORE_HUES) for (const neutral of NEUTRALS) for (const pageStep of [1, 2] as const) for (const kappa of [0.85, 0.4]) for (const primaryMode of ["accessible", "vivid"] as const) {
+      bad.push(...check({ hue, neutral, pageStep, kappa, primaryMode }, `${name} ${neutral} p${pageStep} k${kappa} ${primaryMode}`));
     }
     expect(bad).toEqual([]);
   });
@@ -63,6 +63,7 @@ describe("all text/surface pairs pass the gate (T1-T3)", () => {
     const bad: string[] = [];
     for (const hue of seeds(1)) {
       bad.push(...check({ hue, neutral: "auto" }, `auto h${hue}`));
+      bad.push(...check({ hue, neutral: "auto", primaryMode: "vivid" }, `vivid h${hue}`));
       if (hue % 3 === 0) bad.push(...check({ hue, neutral: "cool", pageStep: 2 }, `cool p2 h${hue}`));
     }
     expect(bad).toEqual([]);
@@ -166,5 +167,34 @@ describe("chart and sidebar tokens", () => {
   test("chart colors are deterministic and depend on the brand hue (brand-excluded set)", () => {
     expect(buildTheme({ hue: 25 }).light["chart-1"]).toBe(buildTheme({ hue: 25 }).light["chart-1"]);
     expect(buildTheme({ hue: 25 }).light["chart-1"]).not.toBe(buildTheme({ hue: 255 }).light["chart-1"]);
+  });
+});
+
+describe("primaryMode: accessible (default) and vivid", () => {
+  test("default is accessible, and there primary-text equals primary", () => {
+    for (const hue of [25, 106, 255]) {
+      const a = buildTheme({ hue }), b = buildTheme({ hue, primaryMode: "accessible" });
+      expect(b).toEqual(a);
+      for (const m of MODES) expect(a[m]["primary-text"]).toBe(a[m].primary);
+    }
+  });
+  test("vivid keeps step 9 for hues whose step 9 only fails as text (yellow, amber, lime in light)", () => {
+    for (const hue of [80, 106, 133]) {
+      const v = buildTheme({ hue, primaryMode: "vivid" }).light, s = generateScale({ hue, mode: "light" });
+      expect([hue, v.primary, v["primary-hover"]]).toEqual([hue, s.hex[8], s.hex[9]]);
+    }
+  });
+  test("vivid never moves farther from step 9 than accessible, and primary-text carries the text duty", () => {
+    for (const hue of seeds(5)) for (const m of MODES) {
+      const s = generateScale({ hue, mode: m }), l9 = s.steps[8].l;
+      const v = buildTheme({ hue, primaryMode: "vivid" })[m], a = buildTheme({ hue })[m];
+      expect([hue, m, Math.abs(okl(v.primary).l - l9) <= Math.abs(okl(a.primary).l - l9) + 0.002]).toEqual([hue, m, true]);
+      expect([hue, m, cr(v["primary-text"], v.background) >= 4.5]).toEqual([hue, m, true]);
+    }
+  });
+  test("the trade-off is real: vivid yellow primary is not readable as text on a light page, primary-text is", () => {
+    const v = buildTheme({ hue: 106, primaryMode: "vivid" }).light;
+    expect(cr(v.primary, v.background)).toBeLessThan(4.5);
+    expect(cr(v["primary-text"], v.background)).toBeGreaterThanOrEqual(4.5);
   });
 });

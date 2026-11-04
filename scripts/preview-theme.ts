@@ -38,6 +38,7 @@ main{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px}
  <label>brand hue <input id="hue" type="range" min="0" max="360" step="1" value="255"><input id="hueN" type="number" min="0" max="360" step="1" value="255"></label>
  <label>kappa <input id="kappa" type="range" min="0.35" max="0.85" step="0.05" value="0.85"><span id="kappaV">0.85</span></label>
  <label>neutral <select id="neutral"><option>neutral</option><option>cool</option><option>warm</option><option>auto</option></select></label>
+ <label>primary <select id="pmode"><option value="accessible">accessible (default)</option><option value="vivid">vivid (+primary-text)</option></select></label>
  <label>page <select id="page"><option value="1">= s1 (default)</option><option value="2">= s2</option></select></label>
  <label>status hues
   <input id="s_destructive" type="number" value="25" title="destructive"><input id="s_success" type="number" value="156" title="success"><input id="s_warning" type="number" value="80" title="warning"><input id="s_info" type="number" value="255" title="info"></label>
@@ -64,7 +65,8 @@ function panel(mode, t){
  '<div class="card"><b>Account settings</b><span class="muted">Card on the page. Border = border token.</span>'+
  '<div class="row"><input class="input" value="Input (border = input, 3:1)"><input class="input focus" value="Focused (ring)"></div>'+
  '<div class="row"><span class="btn primary">Primary</span><span class="btn hover">Primary hover</span><span class="btn secondary">Secondary</span><span class="btn accent">Accent</span><span class="btn outline">Outline</span><span class="btn destructive">Delete</span></div>'+
- '<div class="muteds">muted surface with muted-foreground</div></div>'+
+ '<div class="muteds">muted surface with muted-foreground</div>'+
+ '<div class="row"><span style="color:var(--primary)">text-primary link</span><span style="color:var(--primary-text)">primary-text link</span><span class="muted">(same in accessible; vivid separates them)</span></div></div>'+
  '<div style="display:grid;gap:6px">'+alert("success","Success")+alert("warning","Warning")+alert("info","Info")+alert("destructive","Error")+'</div>'+
  '<div class="pop"><div>Popover item</div><div class="sel">Highlighted (accent)</div><div>Another item</div></div>'+
  '<div class="sw">'+Object.entries(t).map(([k,v])=>'<i style="background:'+v+';color:'+(cr(v,"#000000")>cr(v,"#ffffff")?"#000":"#fff")+'">'+k+'<br>'+v+'</i>').join("")+'</div></section>'
@@ -73,14 +75,14 @@ function render(){
  const hue=+$("hue").value; $("hueN").value=hue; $("kappaV").textContent=$("kappa").value;
  const n=G.nameOfHue(hue); $("name").textContent=n.name+(n.kind==="sub"?" (sub-name; nearest core "+n.core+" "+(n.offset>0?"+":"")+n.offset.toFixed(1)+"°)":" (core)");
  const status={}; for(const s of STATUS)status[s]=+$("s_"+s).value;
- const th=G.buildTheme({hue,kappa:+$("kappa").value,neutral:$("neutral").value,status,pageStep:+$("page").value});
+ const th=G.buildTheme({hue,kappa:+$("kappa").value,neutral:$("neutral").value,status,pageStep:+$("page").value,primaryMode:$("pmode").value});
  $("out").innerHTML=panel("light",th.light)+panel("dark",th.dark)+'<div id="checks"></div>';
  const lines=[];let bad=0,total=0;
- for(const m of ["light","dark"])for(const p of PAIRS){if(p.modes&&!p.modes.includes(m))continue;total++;const r=ratio(p,th[m]);const ok=r>=p.min;if(!ok)bad++;if(!ok||r<p.min+0.2)lines.push('<div class="'+(ok?"good":"bad")+'">'+(ok?"thin ":"FAIL ")+m+" "+p.name+" "+r.toFixed(2)+" (min "+p.min+")"+(p.src?" ["+p.src+"]":"")+"</div>")}
+ for(const m of ["light","dark"])for(const p of PAIRS){if(p.modes&&!p.modes.includes(m))continue;if(p.textPrimary&&$("pmode").value==="vivid")continue;total++;const r=ratio(p,th[m]);const ok=r>=p.min;if(!ok)bad++;if(!ok||r<p.min+0.2)lines.push('<div class="'+(ok?"good":"bad")+'">'+(ok?"thin ":"FAIL ")+m+" "+p.name+" "+r.toFixed(2)+" (min "+p.min+")"+(p.src?" ["+p.src+"]":"")+"</div>")}
  const info=[];for(const m of ["light","dark"])for(const p of INFO)info.push('<div>'+m+" "+p.name+" "+ratio(p,th[m]).toFixed(2)+" ["+p.src+"]</div>");
  $("checks").innerHTML="<b>"+(total-bad)+" / "+total+" pairs pass</b> (shadcn components included; pairs within 0.2 of the gate are listed)"+lines.join("")+"<br><b>Not gated</b> (translucent text inside shadcn components, 4.5 would be needed)"+info.join("");
 }
-for(const id of ["hue","kappa","neutral","page","s_destructive","s_success","s_warning","s_info"])$(id).addEventListener("input",render);
+for(const id of ["hue","kappa","neutral","page","pmode","s_destructive","s_success","s_warning","s_info"])$(id).addEventListener("input",render);
 $("hueN").addEventListener("input",()=>{$("hue").value=$("hueN").value;render()});
 const PRE=[["red",25],["orange",52],["amber",80],["yellow",106],["lime",133],["green",156],["teal",184],["cyan",214],["blue",255],["violet",292],["magenta",325],["pink",355],["coral",40],["carrot",64]];
 $("presets").innerHTML=PRE.map(([n,h])=>'<button data-h="'+h+'">'+n+" "+h+"</button>").join(" ");
