@@ -323,9 +323,9 @@ Quy tắc chung: ngưỡng solve của bộ sinh phải **chặt hơn** ngưỡn
 | Ngôn ngữ | TypeScript. Latest hiện là `typescript@7.0.2`; `tsdown` peer-support `^5 \|\| ^6 \|\| ^7`. Chưa kiểm cặp với Vitest/tsdown ngoài peer range → pin và smoke lúc dựng khung | thuần hàm, dễ test | — |
 | Thư viện màu | **`culori@4.0.2`** (MIT) | Có sẵn mọi thứ prototype cần và đã chạy được: `oklch`, `p3`, `inGamut`, `clampChroma`, `converter('xyz65')` (Y cho P3), `wcagContrast`, mô phỏng CVD. `exports` có `culori/fn` (tree-shake) → bundle nhỏ cho portfolio. ~1.1 MB unpacked. | `colorjs.io@0.7.1` (MIT): chuẩn CSS Color 4 đầy đủ hơn (gamut mapping ΔE_OK) nhưng ~15.8 MB unpacked và chưa 1.0. `apca-w3`: license hạn chế |
 | Contrast | Tự viết ~10 dòng: `CR = (Y1+0.05)/(Y2+0.05)`, Y từ XYZ D65 (đúng với mọi gamut) | WCAG formula trực tiếp; tránh phụ thuộc `wcag-contrast` (3.0.0, đã 4 năm không cập nhật) | |
-| Test | **Vitest 5.1.0** (`engines node ^22.12 \|\| ^24 \|\| >=26`; máy hiện có Node 22.23.2) | Sweep bằng vòng lặp thường, không cần fast-check | |
+| Test | **`bun test`** (built-in, `bun 1.4.4`); không dùng Vitest (D10 = bun) | Sweep bằng vòng lặp thường, không cần fast-check; không thêm dependency test | Vitest 5.1.0 |
 | Build | `tsdown@0.23.5` → ESM + `.d.ts`; thêm CJS nếu portfolio cần | peer TS 5–7 | `tsup@9.0.0` vẫn dùng được, không bị npm đánh dấu deprecated |
-| Package manager | `npm` (có sẵn 10.9.8). `pnpm` **chưa cài** trên máy; `bun 1.4.4` có | tránh cài thêm | |
+| Package manager / runtime | **bun 1.4.4** (D10) | đã có trên máy | npm |
 | Cấu trúc | Một package: `src/` (hàm thuần), `tools/` (sync devglow, build CSS), `presets/`, `docs/`; demo portfolio là package riêng sau | giữ nhỏ | monorepo từ đầu |
 | Tích hợp | Tailwind `4.3.4` + `@tailwindcss/vite` `4.3.4` (smoke C2); `shadcn@4.23.0` CLI chỉ để kiểm token khớp | | |
 
@@ -408,25 +408,25 @@ Thiết kế C:
 
 ---
 
-## 10. Quyết định cần bạn chốt
+## 10. Quyết định (đã chốt 2026-11-04)
 
-Mỗi mục có khuyến nghị; trả lời "theo khuyến nghị" là đủ.
+| # | Quyết định | Chốt |
+|---|---|---|
+| D1 | Số hue lõi | **12** (gap 23°, ΔE 0.060); sky/indigo là bộ mở rộng sau |
+| D2 | Chính sách nút solid | **AA-first** (nút teal/green/cyan/orange/lime/amber/yellow dùng chữ đen; blue tối hơn Radix) |
+| D3 | Metric contrast | **WCAG 2.x là cổng chặn**; APCA chỉ báo cáo (không phải test, không dùng `apca-w3`) |
+| D4 | `input` border | **Nghiêm** ≥ 3:1 (WCAG 1.4.11) |
+| D5 | Neutral cho slider | 3 ramp cố định **+ `auto`** (đi theo seed hue, C ≤ 0.016) |
+| D6 | Alpha | **Chỉ neutral + white/black** |
+| D7 | Token trạng thái | **Đủ 5 token**: `destructive/success/warning/info` × {X, foreground, subtle, text, border} |
+| D8 | Đồng bộ devglow | **Chép + ghim + script** (§8.4, phương án C) |
+| D9 | Hue chính preset devglow | **Chọn tay theo mood** (bảng dưới), cho phép override trong `presets/overrides` |
+| D10 | Package manager | **bun** |
+| D11 | Tên package & repo | **gennex-color** |
 
-| # | Quyết định | Phương án | Khuyến nghị |
-|---|---|---|---|
-| D1 | Số hue lõi | **12** (gap 23°, ΔE 0.060) / 14 (+sky 237°, indigo 275°: gap 17°) | 12; sky/indigo là bộ "mở rộng" sau |
-| D2 | Chính sách nút "solid" | **AA-first**: red/blue/violet/magenta/pink chữ trắng với L9 hạ (blue 0.65→0.56); orange→cyan chữ đen / Radix-look: giữ L9 Radix, chữ trắng 3.0–3.3:1 (rớt AA) | AA-first. Hệ quả nhìn thấy: nút teal/green/cyan/orange dùng chữ **đen** |
-| D3 | Metric contrast | **WCAG 2.x cổng cứng**, APCA chỉ thông tin / APCA cổng | WCAG 2.x (mục tiêu AA đã nêu; `apca-w3` license hạn chế) |
-| D4 | `input` border | **Nghiêm** ≥ 3:1 (WCAG 1.4.11; light ≈ N9, viền đậm hơn shadcn rõ rệt) / mềm kiểu shadcn (1.26:1) | Nghiêm; hạ thành "mềm" khi trường có nền/label đủ nhận diện |
-| D5 | Tint neutral cho demo slider | 3 ramp cố định / **thêm `auto`**: neutral đi theo seed hue (C ≤ 0.016) | Thêm `auto`; mặc định demo = `auto` (slider đổi cả brand lẫn nền, đúng "natural pairing" của Radix); sản phẩm mặc định `neutral` |
-| D6 | Alpha | **Chỉ neutral + white/black**, hue alpha tính theo hàm / phát alpha cho mọi hue (≈ 650 biến) | Chỉ neutral + white/black. Tailwind `/10` (opacity modifier) đã đủ cho shadcn |
-| D7 | Bộ token trạng thái | **`destructive/success/warning/info` × {X, foreground, subtle, text, border}** / chỉ `X`+`foreground` | Đầy đủ 5 token: `text-warning` của amber trên nền trắng **không** đạt AA nếu chỉ có s9 |
-| D8 | Đồng bộ devglow | A (đọc trực tiếp) / B (chép một lần) / **C (chép+ghim+script)** | C |
-| D9 | Hue chính của preset devglow | **`YELLOW` (màu chữ ký trong `highlights.lua`)** / `ORANGE` / chọn tay mỗi palette | `YELLOW`, cho phép override trong `presets/overrides` |
-| D10 | Package manager / repo | **npm** (có sẵn) / cài pnpm / bun | npm |
-| D11 | Tên package & repo | chưa có | bạn đặt |
+D9 — hue chọn tay (OKLCH h): sage 150, ember 40, blush 5, amber 75, dusk 355, vesper 175, moss 135, tide 200, mocha 60, plum 320, ash 107, nocturne 270.
 
-Quyết định nhỏ tôi đã tự chọn (đánh dấu để bạn soát): hue không drift (§4.5); `warm` = 70°/C 0.012 và `cool` = 255°/C 0.016 (§5.2); `radius` = 0.625rem; hue trạng thái mặc định red/green/amber/blue; ưu tiên chữ pha hue, rơi về thuần khi cần; không đưa APCA vào test; CVD chỉ thông tin.
+Quyết định nhỏ tôi đã tự chọn (đánh dấu để bạn soát): hue không drift (§4.5); `warm` = 70°/C 0.012 và `cool` = 255°/C 0.016 (§5.2); `radius` = 0.625rem; hue trạng thái mặc định red/green/amber/blue; ưu tiên chữ pha hue, rơi về thuần khi cần; CVD chỉ thông tin.
 
 ---
 
@@ -434,7 +434,7 @@ Quyết định nhỏ tôi đã tự chọn (đánh dấu để bạn soát): hu
 
 | # | Mục | Chi tiết | Xử lý |
 |---|---|---|---|
-| O1 | **Vùng chết foreground ở biên chữ trắng/đen** | Prototype: 3/120 seed (33°, 246°, 249°) có CR foreground trên s9/s10 = 4.39–4.46 (< 4.5). 12 hue lõi đều đạt (min 4.7 trên s9). Ở dải chuyển hai chế độ chữ, δ(L9) → 0 nên hover gần như không đổi màu (2 dải hue hẹp quanh 35° và 240°). Giải pháp dự kiến: kẹp L9 ra khỏi `[L_w(h), L_k(h)]` (vùng cả chữ trắng lẫn đen đều < 4.55), giữ δ(L9) liên tục | Viết A4 + A5 trước (TDD) rồi mới sửa |
+| O1 | **Vùng chết foreground ở biên chữ trắng/đen** | **Đã sửa ở Phase 1** (`src/scale.ts`). Nguyên nhân thật: s9 và s10 nằm hai phía ngưỡng đổi chữ (rớt ở 30–34° và 246–250°, không chỉ 3 seed). Sửa: pivot luminance Y = √(0.05·1.05) − 0.05 ≈ 0.179 (chữ trắng và đen thuần đều ≈ 4.58:1); hướng hover δ đổi dấu liên tục quanh L pivot của từng hue. Hệ quả còn lại: ở hue 28–34° và 243–250° hover ≈ không đổi (ΔE < 0.02), và foreground là trắng/đen thuần ở 30–36°, 240–247° | T4 chỉ ép cho 12 hue lõi; seed trong hai dải này chấp nhận hover yếu |
 | O2 | Step 11–12 của yellow/amber ô-liu | Không drift hue (§4.5) | Duyệt mắt swatch; nếu xấu thêm bảng drift thưa |
 | O3 | Hiển thị P3 và hành vi `oklch()` ngoài gamut | Chưa test trình duyệt | Phase 1: kiểm Chrome/Safari/Firefox |
 | O4 | Alpha P3 | Chưa prototype | Chỉ làm nếu D6 mở rộng |
