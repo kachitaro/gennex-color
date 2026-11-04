@@ -283,6 +283,8 @@ Ràng buộc đo được trên `gray` (light/dark): N11 trên N1…N4 = 5.77 / 
 
 Tên ramp tránh trùng tên Radix (slate/sand…) để khỏi nhầm giá trị khác nhau cùng tên.
 
+Cài đặt (`src/neutral.ts`): L lấy bảng Radix `gray` làm tròn 3 chữ số, chroma = `chroma_ramp · p_n` với `p` = 0.09, 0.15, 0.26, 0.353, 0.447, 0.54, 0.693, 0.847, 1, 0.92, 0.84, 0.70 (đúng các điểm đã đo ở trên, còn lại nội suy tuyến tính), không cần bước solve vì bảng đã thỏa N2. `cool` = 255° / C 0.016, `warm` = 70° / C 0.012, `auto` = hue seed / C 0.016 (D5). Alpha (D6): với mỗi bậc, alpha tối thiểu để màu nền-alpha nằm trong 0–255 rồi giải màu; hướng tối/sáng tự ra từ dữ liệu. Alpha đo trên sRGB, chưa có P3 (O4).
+
 ### 5.3 Tên phụ cho hue (nhãn slider)
 
 `nameOfHue(h)` (`src/names.ts`) dùng cho nhãn hiển thị; **không** ảnh hưởng bộ sinh, H1/H2 hay `ANCHORS`. Nguyên tắc: hue lõi giữ tên của chính nó trong `[hue−8°, hue+8°)` (nửa mở); tên phụ chỉ phủ khoảng giữa các span lõi; bảng là phân hoạch vòng tròn (24 đoạn, 360°).
@@ -335,6 +337,12 @@ Mọi test quét: **12 hue lõi × 3 neutral × 2 mode** (36 tổ hợp × 2) + 
 | C1 | CSS phát ra: mọi `var(--x)` ở L2 trỏ tới primitive đã định nghĩa; `.dark` ghi đè đủ các token khác biệt (không thiếu, không thừa) | — | — |
 | C2 | Smoke Tailwind v4: `bg-primary text-primary-foreground border-border ring-ring` build ra CSS đúng (`@tailwindcss/vite` 4.3.4) | — | — |
 | R1 | Guard độ gần Radix (devDependency `@radix-ui/colors@3.0.0`): ΔE_OK trung bình 12 cặp ở §4.7 | ≤ 0.035 | 0.022 / 0.020 |
+| R2 | Guard neutral gần Radix: `neutral` ~ gray, `cool` ~ slate (ΔE_OK trung bình 12 bậc) | ≤ 0.02 | 0.0000 / 0.0043 (light), 0.0000 / 0.0031 (dark) |
+| N1 | Neutral (3 ramp cố định + `auto` mọi hue nguyên 0–359, cả hai mode): 12 bậc, trong sRGB, L đơn điệu (light giảm, dark tăng), ΔL ≥ 0.008, chroma đỉnh ở bậc 9; `neutral` chroma = 0; `auto` hue = seed, chroma ≤ 0.016 | — | `test/neutral.test.ts` |
+| N2 | Chữ neutral: s11 ≥ 4.5 và s12 ≥ 7 trên **s1–s4** (background, card, muted, accent; chặt hơn A3 vì `muted-foreground` = N11 phải đạt trên cả `accent` = N4) | 4.5 / 7 | min 4.77 / 12.26 (mọi ramp, 360 seed `auto`, 2 mode) |
+| N3 | Viền: s9 ≥ 3:1 trên s1 và s2 (D4 `input` nghiêm, T3 `ring`) | 3 | min **3.12** (light, `auto` 141°, trên s2): biên mỏng |
+| N4 | `auto` liên tục theo seed: ΔE_OK mọi bậc giữa h và h+1° | < 0.002 | < 0.002 |
+| N5 | Alpha neutral: composite (sRGB source-over) lên s1 tái tạo từng bậc ±1/255, alpha ∈ [0,1], bậc 1 trong suốt, không giảm theo bậc, hướng tối (light) / sáng (dark); `BLACK_ALPHA`/`WHITE_ALPHA` = Radix 3.0.0; `black-a11/a12` trên s1 light và `white-a11/a12` trên s1 dark đạt 4.5 / 7 | ±1 mức | sai số max 0.45 mức |
 | G | Golden snapshot 12 hue × 2 mode × 2 gamut (hex + oklch) để đổi đường cong phải qua review | — | — |
 
 Quy tắc chung: ngưỡng solve của bộ sinh phải **chặt hơn** ngưỡng test (4.55 vs 4.5; 7.1 vs 7) để làm tròn 8-bit không làm rớt.
