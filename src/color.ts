@@ -36,3 +36,10 @@ export function luminance(c: Oklch): number {
   const x = toLrgb({ mode: "oklch", ...c })!;
   return 0.2126 * x.r + 0.7152 * x.g + 0.0722 * x.b;
 }
+
+const toOklab = converter("oklab");
+/** Euclidean distance in OKLab between two hex colors. */
+export function deltaE(a: string, b: string): number {
+  const [p, q] = [toOklab(a)!, toOklab(b)!];
+  return Math.hypot(p.l - q.l, p.a - q.a, p.b - q.b);
+}

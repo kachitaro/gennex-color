@@ -1,55 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import { CORE_HUES } from "../src/hues";
 import { generateScale, type Mode } from "../src/scale";
-import { STATUS_HUES, STATUS_NAMES, TOKEN_NAMES, buildTheme, type ThemeOptions, type TokenMap } from "../src/theme";
+import { STATUS_HUES, STATUS_NAMES, TOKEN_NAMES, buildTheme, type ThemeOptions } from "../src/theme";
+import { CHARTS, check } from "./pairs";
 import { cr, dE, okl, seeds } from "./util";
 
 const MODES: Mode[] = ["light", "dark"];
 const NEUTRALS = ["cool", "neutral", "warm", "auto"] as const;
 
-interface Pair { name: string; fg: string; bg: string; min: number }
-/** Every text/surface pair of the mapping table (SPEC 3.3, T1-T3) and its gate. */
-function pairs(): Pair[] {
-  const out: Pair[] = [];
-  const P = (fg: string, bg: string, min: number) => out.push({ name: `${fg} on ${bg}`, fg, bg, min });
-  // T1 text: foreground 7:1 on every neutral surface, muted-foreground 4.5:1 on all of them
-  for (const bg of ["background", "card", "popover", "muted", "secondary", "accent"]) {
-    P(bg === "card" ? "card-foreground" : bg === "popover" ? "popover-foreground" : "foreground", bg, 7);
-    P("muted-foreground", bg, 4.5);
-  }
-  P("foreground", "card", 7); P("foreground", "popover", 7);
-  P("secondary-foreground", "secondary", 4.5);
-  P("accent-foreground", "accent", 4.5);
-  P("primary-foreground", "primary", 4.5);
-  P("primary-foreground", "primary-hover", 4.5);
-  // D7: every status has the same 5 tokens
-  for (const s of STATUS_NAMES) {
-    P(`${s}-foreground`, s, 4.5);
-    for (const bg of ["background", "card", `${s}-subtle`]) P(`${s}-text`, bg, 4.5);
-    P(`${s}-border`, "background", 1.2); // identification, not WCAG 1.4.11
-  }
-  // T3 non-text 3:1 (D4 strict input border, focus ring); border is decorative
-  for (const bg of ["background", "card"]) { P("ring", bg, 3); P("input", bg, 3); P("border", bg, 1.2); }
-  return out;
-}
-const PAIRS = pairs();
-
-function violations(label: string, t: TokenMap): string[] {
-  const bad: string[] = [];
-  for (const p of PAIRS) {
-    const r = cr(t[p.fg], t[p.bg]);
-    if (r < p.min) bad.push(`${label}: ${p.name} ${r.toFixed(2)} < ${p.min}`);
-  }
-  return bad;
-}
-function check(o: ThemeOptions, label: string) {
-  const th = buildTheme(o);
-  return MODES.flatMap((m) => violations(`${label} ${m}`, th[m]));
-}
-
 describe("token set (C1, D7)", () => {
   test("TOKEN_NAMES covers shadcn names and 5 tokens per status", () => {
-    for (const n of ["background", "foreground", "card", "card-foreground", "popover", "popover-foreground", "primary", "primary-foreground", "secondary", "secondary-foreground", "muted", "muted-foreground", "accent", "accent-foreground", "destructive", "border", "input", "ring"]) expect(TOKEN_NAMES).toContain(n);
+    for (const n of ["background", "foreground", "card", "card-foreground", "popover", "popover-foreground", "primary", "primary-foreground", "secondary", "secondary-foreground", "muted", "muted-foreground", "accent", "accent-foreground", "destructive", "border", "input", "ring", ...CHARTS, "sidebar", "sidebar-foreground", "sidebar-primary", "sidebar-primary-foreground", "sidebar-accent", "sidebar-accent-foreground", "sidebar-border", "sidebar-ring"]) expect(TOKEN_NAMES).toContain(n);
     for (const s of STATUS_NAMES) for (const suf of ["", "-foreground", "-subtle", "-text", "-border"]) expect(TOKEN_NAMES).toContain(s + suf);
     expect(new Set(TOKEN_NAMES).size).toBe(TOKEN_NAMES.length);
   });
@@ -156,5 +117,46 @@ describe("structure (T4-T6)", () => {
       expect(cr(th[m].ring, th[m].card)).toBeGreaterThanOrEqual(3);
     }
     expect(th.light.ring).not.toBe(th.light.primary);
+  });
+});
+
+describe("chart and sidebar tokens", () => {
+  test("sidebar tokens follow the mapping: surface N2, accent N4, primary and ring shared with the app", () => {
+    for (const hue of [25, 106, 255]) {
+      const th = buildTheme({ hue });
+      for (const m of MODES) {
+        const t = th[m];
+        expect(t["sidebar-primary"]).toBe(t.primary);
+        expect(t["sidebar-primary-foreground"]).toBe(t["primary-foreground"]);
+        expect(t["sidebar-ring"]).toBe(t.ring);
+        expect(t["sidebar-accent"]).toBe(t.accent);
+        expect(t["sidebar-border"]).toBe(t.border);
+        expect(t["sidebar-foreground"]).toBe(t.foreground);
+      }
+    }
+  });
+  test("sidebar surface is neutral step 2: equals card in dark, slightly darker than the page in light", () => {
+    const th = buildTheme({ hue: 255 });
+    expect(th.dark.sidebar).toBe(th.dark.card);
+    expect(okl(th.light.sidebar).l).toBeLessThan(okl(th.light.background).l);
+  });
+  test("5 chart colors: distinct from each other and from the brand (dE >= 0.05)", () => {
+    const bad: string[] = [];
+    for (const hue of seeds(5)) for (const neutral of NEUTRALS) {
+      const th = buildTheme({ hue, neutral });
+      for (const m of MODES) {
+        const c = CHARTS.map((k) => th[m][k]);
+        if (new Set(c).size !== 5) bad.push(`${m} h${hue} duplicate chart colors`);
+        for (let i = 0; i < 5; i++) {
+          if (dE(c[i], th[m].primary) < 0.05) bad.push(`${m} h${hue} ${neutral} chart-${i + 1} ~ primary ${dE(c[i], th[m].primary).toFixed(3)}`);
+          for (let j = i + 1; j < 5; j++) if (dE(c[i], c[j]) < 0.05) bad.push(`${m} h${hue} ${neutral} chart-${i + 1}/${j + 1} ${dE(c[i], c[j]).toFixed(3)}`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+  test("chart colors are deterministic and depend on the brand hue (brand-excluded set)", () => {
+    expect(buildTheme({ hue: 25 }).light["chart-1"]).toBe(buildTheme({ hue: 25 }).light["chart-1"]);
+    expect(buildTheme({ hue: 25 }).light["chart-1"]).not.toBe(buildTheme({ hue: 255 }).light["chart-1"]);
   });
 });
