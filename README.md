@@ -1,6 +1,6 @@
 # gennex-color
 
-`gennex-color@0.1.0`: a color system that pairs Radix-style 12-step scales with shadcn/ui semantic tokens. For any brand hue
+`gennex-color@0.1.1`: a color system that pairs Radix-style 12-step scales with shadcn/ui semantic tokens. For any brand hue
 (0-360), light and dark, every text/surface pair of the shadcn token set and of the shadcn `radix-nova` components
 (including their translucent forms such as `bg-destructive/10` or `hover:bg-primary/80`) is checked against WCAG 2.x in tests.
 
@@ -12,8 +12,8 @@ Status: **not published to npm**. Design, measurements and decisions: [`docs/SPE
 Not on npm yet. Build a tarball and install that (dependencies come with it; `culori` is the only one):
 
 ```sh
-bun install && bun run build && bun pm pack     # creates gennex-color-0.1.0.tgz
-npm install ./gennex-color-0.1.0.tgz            # or: bun add ./gennex-color-0.1.0.tgz
+bun install && bun run build && bun pm pack     # creates gennex-color-0.1.1.tgz
+npm install ./gennex-color-0.1.1.tgz            # or: bun add ./gennex-color-0.1.1.tgz
 ```
 
 Tested with Node 22 and Bun 1.4 (ESM only). `bun run smoke:clean` proves it from an empty directory.
@@ -176,4 +176,7 @@ bun run smoke:example  # packs the tarball, builds examples/vite-app
 bun run perf:example   # slider cost in headless Chrome, 1x and 4x CPU
 ```
 
-No license has been chosen yet (needed before publishing).
+## License
+
+MIT, see [`LICENSE`](LICENSE). The `devglow-*` presets are derived from palette data of
+[devglow](https://github.com/phatnt199/devglow) (MIT, Copyright (c) 2025 Phat Nguyen); the notice is in [`NOTICE`](NOTICE).
