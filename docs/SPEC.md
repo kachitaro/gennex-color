@@ -368,7 +368,7 @@ Quy tắc chung: ngưỡng solve của bộ sinh phải **chặt hơn** ngưỡn
 | Cấu trúc | Một package: `src/` (hàm thuần), `tools/` (sync devglow, build CSS), `presets/`, `docs/`; demo portfolio là package riêng sau | giữ nhỏ | monorepo từ đầu |
 | Tích hợp | Tailwind `4.3.4` + `@tailwindcss/vite` `4.3.4` (smoke C2); `shadcn@4.23.0` CLI chỉ để kiểm token khớp | | |
 
-API: `generateScale`, `generateNeutral`, `neutralAlpha`, `neutralBorder`, `buildTheme(opts) → { light, dark }` (mỗi mode là `Record<token, hex>`), `nameOfHue(h)`, `CORE_HUES`, `TOKEN_NAMES`. Chưa viết: `toCss(tokens)`, `applyThemeToRoot` (Phase xuất CSS). Phase 3 chưa có `chart-1…5`, `sidebar-*`, bản P3.
+API: `generateScale`, `generateNeutral`, `neutralAlpha`, `neutralBorder`, `buildTheme(opts) → { light, dark }` (mỗi mode là `Record<token, hex>`), `toCss(theme, opts?)`, `toOklchCss(hex)`, `toDtcg(theme)`, `PRESETS`, `nameOfHue(h)`, `CORE_HUES`, `TOKEN_NAMES`. Chưa có: `applyThemeToRoot`, bản P3.
 
 ---
 
@@ -481,8 +481,21 @@ Quyết định nhỏ tôi đã tự chọn (đánh dấu để bạn soát): hu
 | O6 | Đo trên sRGB là chính | Prototype P3 chỉ kiểm step 9 vs foreground | P1 |
 | O7 | Prototype không nằm trong repo | Số liệu không tái lập được từ repo cho tới khi viết code | Phase 1 chuyển các sweep thành test; giữ Phụ lục A |
 | O8 | Hue drift Radix dark không nhất quán | Không dùng để chỉnh | — |
+| O9 | **shadcn dùng `text-primary` / `text-destructive` làm màu chữ**, nhưng `primary`/`destructive` của ta là màu nền đặc (s9) kèm foreground riêng | Đo trên 12 preset: chữ `primary`/`destructive` trên background dưới 4.5:1 ở **24/48** mẫu, tất cả ở dark (blue dark primary 3.63, destructive 3.75; light đạt 4.9–5.1). shadcn dark mặc định dùng destructive sáng hơn (L 0.704). Nhìn thấy ở nút `variant="destructive"` (chữ đỏ trên nền đỏ mờ) và link `text-primary` | **Chưa sửa, cần bạn chốt**: (a) ở dark, `primary`/`destructive` lấy bậc sáng hơn để đạt 4.5:1 làm chữ (đổi cặp foreground, nút solid sáng hơn); (b) giữ s9 và coi dùng làm chữ là sai, hướng dẫn dùng `*-text` (cần override component); (c) thêm token riêng, không có tên shadcn tương ứng |
 
 ---
+
+## 12. Xuất bản (Phase 4)
+
+**Token**: thêm `chart-1…5` và `sidebar-*` (8 token) → 51 token mỗi mode. `sidebar` = N2 (dark: bằng `card`; light: hơi tối hơn page), `sidebar-primary` = `primary`, `sidebar-accent` = N4, `sidebar-ring` = `ring`. Chart: các hue lõi cách hue brand ≥ 22°, mỗi màu được nâng tới ≥ 3:1 trên background và card (bậc đầu tiên trong s9–s12), chọn greedy max-min ΔE (OKLab) so với brand và các màu đã chọn. `ring` và `input` giờ tính cho cả sidebar. Test: `test/pairs.ts` (bảng cặp dùng chung), min đo được: chart/card 3.222, ring/sidebar 3.111, input 3.050, chart ΔE min 0.107 (giữa các chart) / 0.111 (so brand).
+
+**CSS** (`toCss`): `:root` (có `--radius: 0.625rem`), `.dark`, `@theme inline` ánh xạ mọi token `--color-*: var(--*)` + thang radius shadcn. Tên biến khớp danh sách token trong docs shadcn theming; token mở rộng (primary-hover, destructive-foreground, success-*, …) được phát và ánh xạ giống nhau. Giá trị `oklch(L C h)` (L, C 4 chữ số, h 2 chữ số) sinh từ hex 8-bit nên khớp test contrast; test round-trip oklch → hex cho mọi token. Mọi build đã kiểm: Lightning CSS (Vite) đổi `oklch(0.99 …)` thành `oklch(99% …)`; vẫn cùng giá trị.
+
+**DTCG** (`toDtcg`): theo Design Tokens Color Module 2025.10 (bản draft trên designtokens.org ghi "preview, không implement"; format `$value = { colorSpace, components, hex }` là của bản 2025.10 đã công bố): hai nhóm `light` và `dark`, mỗi token `$type: "color"`, `colorSpace: "srgb"`, `components` 0–1, `hex` 6 chữ số, không alpha.
+
+**Package** (`gennex-color@0.0.0`, chưa publish): `exports` gồm `.` (ESM + `.d.mts`), `./css/<preset>.css`, `./tokens/<preset>.tokens.json`. `bun run build` = tsdown + `scripts/build-assets.ts` (12 preset, tên theo hue lõi: red … pink, neutral = gray). Preset ngoài bộ này: gọi `buildTheme`. Preset devglow (D8/D9) chưa làm.
+
+**Smoke**: `bun run smoke` (dist JS + file CSS/JSON khớp hàm), `bun run smoke:example` (đóng gói tarball thật bằng `bun pm pack`, giải vào `examples/vite-app` — Vite + Tailwind v4 + shadcn `radix-nova` Button/Input/Card sinh bằng `shadcn@4.23.0` CLI — build, kiểm 102 biến theme có trong CSS đã build, utility `bg-primary`… được sinh, theme mặc định shadcn không rò rỉ). Đã xem trực quan light và dark bằng Chrome headless.
 
 ## Phụ lục A — Cách tái lập số liệu
 
