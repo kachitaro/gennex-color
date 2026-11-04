@@ -6,3 +6,5 @@ export type { HueName } from "./names";
 export { generateNeutral, neutralAlpha, autoRamp, NEUTRAL_RAMPS, AUTO_CHROMA, BLACK_ALPHA, WHITE_ALPHA } from "./neutral";
 export type { NeutralRamp, NeutralRampName, NeutralScale, AlphaStep } from "./neutral";
 export { neutralBorder } from "./neutral";
+export { buildTheme, TOKEN_NAMES, STATUS_NAMES, STATUS_HUES } from "./theme";
+export type { Theme, ThemeOptions, TokenMap, StatusName } from "./theme";

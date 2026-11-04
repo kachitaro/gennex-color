@@ -134,6 +134,8 @@ Nguyên tắc: **cùng một bảng ánh xạ**, khác biệt dark nằm ở (a)
 
 Giới hạn của viền input: 3:1 trên nền gần trắng buộc L ≤ ~0.66, nên "nhẹ hơn" chỉ được thêm ~0.015 L ở light (0.643 → 0.658); dark nhẹ hơn nhiều (3.70 → 3.30). Muốn viền nhẹ hơn nữa phải bỏ 3:1 (D4 "mềm", dựa vào label/nền ô nhập để nhận diện theo WCAG 1.4.11) — chưa cài, cần bạn chốt.
 
+**Đã cài (Phase 3, `src/theme.ts`)**: `buildTheme({ hue, kappa?, neutral?, status?, pageStep? })`. 18 token shadcn (background, foreground, card, card-foreground, popover, popover-foreground, primary, primary-foreground, primary-hover, secondary, secondary-foreground, muted, muted-foreground, accent, accent-foreground, border, input, ring) + 4 trạng thái × 5 token (destructive, success, warning, info × {X, -foreground, -subtle, -text, -border}) = 38 token mỗi mode, mặc định hue trạng thái red 25 / green 156 / amber 80 / blue 255. Brand = seed tuỳ ý (không cần thuộc bộ lõi). Preview có chỉnh theme: `docs/preview/theme.html` (bundle iife `gennex-color.js` sinh bởi `scripts/preview-theme.ts`).
+
 ### 3.4 L3 — Theme
 
 ```
@@ -328,12 +330,12 @@ Mọi test quét: **12 hue lõi × 3 neutral × 2 mode** (36 tổ hợp × 2) + 
 | A5 | Liên tục theo seed: ΔE_OK mọi bậc giữa h và h+1° | ≤ 0.02 | max 0.016 (h=38, s10) |
 | A6 | Chroma ≥ κ·0.9·Cmax tại step 9 (không bị rửa) | — | theo cấu trúc |
 | P1 | Bản P3: cùng L,h với bản sRGB; C_P3 ≥ C_sRGB; AA (A3, A4) chạy lại bằng Y từ XYZ | như A3/A4 | lệch CR tới ±0.21 → bắt buộc kiểm riêng |
-| T1 | Cặp chữ: `foreground` trên background/card/popover/muted/secondary/accent/sidebar ≥ 7; `muted-foreground` trên cùng danh sách (trừ foreground-only) ≥ 4.5; `X-foreground` trên `X` và `X-hover` ≥ 4.5 cho primary, secondary, accent, destructive, success, warning, info, sidebar-primary | 7 / 4.5 | — |
-| T2 | Chữ trạng thái: `X-text` trên background, card, `X-subtle` ≥ 4.5; `X-border` trên background ≥ 1.2:1 (nhận diện, không phải 1.4.11) | 4.5 / 1.2 | — |
-| T3 | Non-text 3:1 (WCAG 1.4.11): `ring` trên background và card; `input` trên background và card; mỗi `chart-n` trên card. `border` trang trí: miễn, chỉ kiểm ≥ 1.2:1 | 3 | shadcn default: 1.26 / 2.59 → ta bắt buộc tính lại (D4) |
-| T4 | Trạng thái phân biệt được: `primary` vs `primary-hover` (s9 vs s10) ở **mọi** hue (bước 0.5°) và κ ∈ {0.35, 0.5, 0.6, 0.7, 0.85}, cả hai mode. `secondary` vs hover, `accent` vs `card` thuộc lớp semantic (Phase sau) | ΔE_OK ≥ 0.02 | min 0.0216 (light, h=243°, κ=0.35) |
-| T5 | Không dùng đen/trắng tuyệt đối cho surface/text token (`L ≥ 0.995` hoặc `L ≤ 0.12` cho `background`/`foreground`/`card`/`popover` bị cấm). Ngoại lệ: foreground rơi về thuần trong vùng chết (§3.2). | — | devglow giữ tinh thần này |
-| T6 | Dark không phải đảo: (a) `L(background) < L(card) ≤ L(popover)` ở dark; (b) T1–T3 đạt độc lập cho dark, không suy từ light | — | — |
+| T1 | Cặp chữ (cài đặt ở `test/theme.test.ts`): `foreground` / `card-foreground` / `popover-foreground` trên background, card, popover, muted, secondary, accent ≥ 7; `muted-foreground` trên cùng danh sách ≥ 4.5; `X-foreground` trên `X` ≥ 4.5 cho primary (và `primary-hover`), secondary, accent, destructive, success, warning, info (sidebar chưa làm) | 7 / 4.5 | min 12.26 (foreground), 4.61 (muted-foreground trên accent, `warm` light), 4.57 (primary-fg), 4.77 (status-fg) |
+| T2 | Chữ trạng thái: `X-text` trên background, card, `X-subtle` ≥ 4.5; `X-border` trên background ≥ 1.2:1 (nhận diện, không phải 1.4.11) | 4.5 / 1.2 | min 4.552 (`warning-text` trên `warning-subtle`, light) / 1.598 |
+| T3 | Non-text 3:1 (WCAG 1.4.11): `ring` trên background và card; `input` trên background và card; mỗi `chart-n` trên card (chart chưa làm). `border` trang trí: chỉ kiểm ≥ 1.2:1. `ring` = bậc đầu tiên trong [s9, s10, s11, s12] của brand đạt 3.05 trên cả hai bề mặt (brand vàng/amber rơi về s11) | 3 | min **3.050** (`input`), **3.055** (`ring`): biên mỏng; border min 1.331 |
+| T4 | Trạng thái phân biệt được: `primary` vs `primary-hover` ở **mọi** hue (bước 0.5°) và κ ∈ {0.35 … 0.85}, cả hai mode (scale); ở lớp token: `primary`/`primary-hover`, `secondary`/`accent`, `accent`/`card` (mỗi 3° hue × 4 neutral × 2 mode) | ΔE_OK ≥ 0.02 | scale min 0.0216 (light, h=243°, κ=0.35); token: xanh |
+| T5 | Không dùng đen/trắng tuyệt đối cho `background`/`foreground`/`card`/`popover` (L trong (0.12, 0.995)), kể cả `pageStep: 2` | — | xanh |
+| T6 | Dark không phải đảo: dark `L(background) < L(card) ≤ L(popover)`; light mặc định `card = background`; dark nền < 0.3, light nền > 0.9; `muted-foreground` khác nhau theo mode; mỗi mode dùng scale/neutral riêng nên T1–T3 đạt độc lập | — | xanh |
 | H1 | 12 hue lõi: khoảng cách hue min | ≥ 22° | 23° |
 | H2 | ΔE_OK(step 9) min giữa hai hue lõi bất kỳ | ≥ 0.05 | 0.060 |
 | H3 | Tên ↔ góc hue: \|h − h_ref\| nhỏ nhất qua {Tailwind, Radix} | ≤ 8° | max 5° (yellow qua Radix 101°); còn lại ≤ 4.4° |
@@ -366,7 +368,7 @@ Quy tắc chung: ngưỡng solve của bộ sinh phải **chặt hơn** ngưỡn
 | Cấu trúc | Một package: `src/` (hàm thuần), `tools/` (sync devglow, build CSS), `presets/`, `docs/`; demo portfolio là package riêng sau | giữ nhỏ | monorepo từ đầu |
 | Tích hợp | Tailwind `4.3.4` + `@tailwindcss/vite` `4.3.4` (smoke C2); `shadcn@4.23.0` CLI chỉ để kiểm token khớp | | |
 
-API dự kiến (chưa viết): `generateScale`, `generateNeutral`, `buildTheme(theme) → TokenMap`, `toCss(tokenMap)`, `nameOfHue(h)`, `applyThemeToRoot(el, theme)` (chỉ ghi biến seed cho slider).
+API: `generateScale`, `generateNeutral`, `neutralAlpha`, `neutralBorder`, `buildTheme(opts) → { light, dark }` (mỗi mode là `Record<token, hex>`), `nameOfHue(h)`, `CORE_HUES`, `TOKEN_NAMES`. Chưa viết: `toCss(tokens)`, `applyThemeToRoot` (Phase xuất CSS). Phase 3 chưa có `chart-1…5`, `sidebar-*`, bản P3.
 
 ---
 
