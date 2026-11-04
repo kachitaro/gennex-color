@@ -523,7 +523,7 @@ Dùng cho demo thanh trượt hue. Cơ chế (`src/runtime.ts`): giữ **một**
 
 **Không layout shift**: chỉ đổi custom property; không thêm node vào `<body>`, không đổi attribute/class/style của root; gọi lại với theme giống hệt không ghi gì (cùng text node). Test (`test/runtime.test.ts`, happy-dom, 8 test): biến computed theo theme và theo `.dark` (không gọi lại khi toggle), một `<style>` duy nhất qua 4 lần cập nhật và 90 hue liên tiếp, body/root không đổi, scope theo element độc lập, mặc định dùng `document` toàn cục, ném lỗi rõ ràng khi không có DOM. Đột biến thử: bỏ điều kiện "chỉ ghi khi khác" làm test layout đỏ; đổi `:root:root` thành `:root` làm test nội dung đỏ.
 
-Chi phí: `buildTheme` ≈ **5.3 ms** mỗi lần (360 hue, neutral `auto`, cả hai mode) trong Bun; ngân sách 16 ms/frame còn dư. Example (`examples/vite-app/src/components/theme-slider.tsx`) gộp mỗi frame một lần cập nhật bằng `requestAnimationFrame`. Đã kiểm trong Chrome headless: tải `?hue=40` và `?hue=140` cho đúng một `<style>`, màu primary/nền đổi theo (coral light, lime dark).
+Chi phí: `buildTheme` ≈ **5.3 ms** mỗi lần (360 hue, neutral `auto`, cả hai mode) trong Bun; trong trình duyệt tổng 9.8 ms ở 1× và 38 ms ở 4× chậm (xem 12.4). Example (`examples/vite-app/src/components/theme-slider.tsx`) gộp mỗi frame một lần cập nhật bằng `requestAnimationFrame`. Đã kiểm trong Chrome headless: tải `?hue=40` và `?hue=140` cho đúng một `<style>`, màu primary/nền đổi theo (coral light, lime dark).
 
 ### 12.4 Hiệu năng thanh trượt (đo trong Chrome headless)
 
