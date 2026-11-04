@@ -9,7 +9,8 @@
     "build": "tsdown && bun scripts/build-assets.ts",
     "smoke": "bun run build && bun scripts/smoke.ts && tsc --noEmit -p tsconfig.smoke.json",
     "smoke:example": "bun scripts/smoke-example.ts",
-    "smoke:clean": "bun scripts/smoke-clean.ts"
+    "smoke:clean": "bun scripts/smoke-clean.ts",
+    "perf:example": "bun scripts/perf-example.ts"
   },
   "dependencies": {
     "culori": "4.0.2"

@@ -525,6 +525,24 @@ Dùng cho demo thanh trượt hue. Cơ chế (`src/runtime.ts`): giữ **một**
 
 Chi phí: `buildTheme` ≈ **5.3 ms** mỗi lần (360 hue, neutral `auto`, cả hai mode) trong Bun; ngân sách 16 ms/frame còn dư. Example (`examples/vite-app/src/components/theme-slider.tsx`) gộp mỗi frame một lần cập nhật bằng `requestAnimationFrame`. Đã kiểm trong Chrome headless: tải `?hue=40` và `?hue=140` cho đúng một `<style>`, màu primary/nền đổi theo (coral light, lime dark).
 
+### 12.4 Hiệu năng thanh trượt (đo trong Chrome headless)
+
+`scripts/perf-example.ts` (Chrome DevTools Protocol, không thêm dependency) kéo hue 0→360 bước 3° trên app example đã build; mỗi lần cập nhật gồm `buildTheme` + `applyThemeToRoot` + ép tính lại style. Layout/paint không nằm trong số đo. Example hiển thị chỉ số này ngay dưới thanh trượt.
+
+| CPU | Tổng/lần: median / p95 / max | buildTheme | applyThemeToRoot | Style recalc | Khoảng giữa các frame |
+|---|---|---|---|---|---|
+| 1× | 9.8 / 13.6 / 18.3 ms | 7.4 ms | 0.3 ms | 2.0 ms | 16.7 ms |
+| **4× chậm** | **38.0 / 41.2 / 48.7 ms** | 29.5 ms | 1.1 ms | 7.2 ms | 49.9 ms (≈ 20 fps) |
+
+**Vượt 16 ms ở 4×** (và p95/max chạm 14–18 ms ở 1×). `buildTheme` là 75–78% tổng. Trong Bun nó 5.2 ms, trong đó ~30 lần `generateScale` (0.13 ms/lần) ≈ 3.9 ms; **28 trong 30 lần dùng hue không đổi khi kéo thanh trượt** (4 hue trạng thái cố định ×2 mode, ~10 hue lõi của chart ×2 mode, chỉ brand ×2 mode là đổi).
+
+Đề xuất giảm (chưa làm, ước lượng, cần đo lại sau khi sửa):
+1. **Cache `generateScale` theo `(hue, kappa, mode)`** (Map nhỏ, hoặc LRU vài trăm mục). Kéo thanh trượt chỉ tính 2 scale brand mỗi lần; ước lượng buildTheme còn ~25% (≈ 7.4 → ~2 ms ở 1×; ≈ 8 ms ở 4×). Tổng ở 4× khi đó ≈ 16–17 ms: sát ngưỡng, nên kết hợp 2.
+2. **Tách phần phụ thuộc brand khỏi phần cố định** trong `buildTheme`: status/chart-candidates tính một lần khi `status`/`kappa` không đổi, nhận qua đối tượng `ThemeBuilder` giữ cache (`createThemeBuilder(opts).build(hue)`); cache sống theo builder nên không có trạng thái toàn cục ẩn.
+3. **Giảm tần suất**: cập nhật cách frame khi rảnh (đo > 12 ms thì bỏ qua frame kế) hoặc `requestIdleCallback`; thanh trượt vẫn mượt vì chỉ trễ màu.
+4. **Giảm style recalc** (7.2 ms ở 4×): áp dụng vào container demo (`applyThemeToRoot(theme, container)`) thay vì `:root` để chỉ subtree cần tính lại.
+5. Đẩy `buildTheme` sang Web Worker (chỉ trả `Theme`); tốn truyền dữ liệu nhưng giải phóng main thread. Làm sau cùng.
+
 ## Phụ lục A — Cách tái lập số liệu
 
 Script ở `/tmp/probe` (ephemeral): `radix.mjs` (median L/C/hue theo bậc, step 9, khoảng cách hue), `fit.mjs` (step 9 vs cusp gamut), `drift.mjs`/`drift2.mjs` (độ dốc drift, lợi ích), `gen.mjs` (bộ sinh prototype: `scale(h, dark)`), `eval1–3.mjs` (so Radix), `eval2.mjs` (sweep luật A3/A4), `cont.mjs` (liên tục 1°), `hues.mjs` (khoảng cách hue/ΔE), `p3.mjs`, `shad.mjs` (audit shadcn), `dg.mjs`/`presets.mjs` (devglow), `swatch.mjs` (SVG + CVD), `time.mjs`.
