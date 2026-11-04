@@ -6,7 +6,7 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "build": "tsdown",
+    "build": "tsdown && bun scripts/build-assets.ts",
     "smoke": "bun run build && bun scripts/smoke.ts && tsc --noEmit -p tsconfig.smoke.json"
   },
   "dependencies": {
@@ -26,7 +26,10 @@
     ".": {
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
-    }
+    },
+    "./css/*.css": "./dist/css/*.css",
+    "./tokens/*.json": "./dist/tokens/*.json",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist"
