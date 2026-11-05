@@ -88,7 +88,7 @@ Loại: Next (cần runtime hoặc export tĩnh nặng cho một trang), Astro (
 `vite build` → thư mục tĩnh gồm `index.html`, `preview.html`, `assets/`, `r/*.json` (§4), `registry.json`. Chạy được trên GitHub Pages, Cloudflare Pages, Netlify, Vercel mà không cần server.
 - **GitHub Pages** (repo `kachitaro/gennex-color`): miễn phí, cùng nơi với mã; URL `https://kachitaro.github.io/gennex-color/`; cần `base: "/gennex-color/"` và đường dẫn tương đối trong lệnh/registry. Workflow: `bun install → bun test → bun run build → actions/upload-pages-artifact → deploy-pages`.
 - **Cloudflare Pages / Vercel**: domain gốc, headers tuỳ chỉnh (CORS, cache) dễ; có thể thêm function sau (§4.4).
-- **URL là API công khai**: `…/r/theme-ember.json` sẽ nằm trong README người dùng. Chọn host/domain một lần, về sau không đổi (D14).
+- **URL là API công khai**: `…/r/theme-ember.json` sẽ nằm trong README người dùng. Host/domain đã chốt ở D14 (`color.gen-nex.tech`), về sau không đổi.
 - CI hiện chưa có (`.github/` không tồn tại). Thêm: `test` + `build site` trên PR; deploy khi merge `main`.
 
 ---
@@ -326,7 +326,7 @@ Thứ tự triển khai (đã chốt): **5a** audit + mã + `toRegistryItem`; **
 |---|---|---|
 | D12 | Chỗ đặt site | **`apps/site` trong repo này** (bun workspaces) |
 | D13 | Preview | **2 iframe** (light/dark), cấu hình qua `postMessage` |
-| D14 | Host | **Domain riêng trên Cloudflare Pages**. **Còn thiếu: tên domain** (cần trước bước 5d; URL registry không đổi được về sau). Nếu muốn hàm biên sau này, host phải chạy được function |
+| D14 | Host + domain | **`color.gen-nex.tech`** (subdomain của `gen-nex.tech`). **Host: Vercel** (đo 2026-11-05: `portfolio.gen-nex.tech` có NS Cloudflare, A = IP proxy Cloudflare, nhưng header `x-vercel-id`/`x-vercel-cache` ⇒ gốc là Vercel, Cloudflare chỉ là DNS + proxy). Quyết định cũ «Cloudflare Pages» bị thay: dùng cùng nhà cung cấp với portfolio. **URL registry (công khai, không đổi): `https://color.gen-nex.tech/r/<item>.json`**. Vercel chạy được function nên hàm biên `/r/c/<mã>.json` sau này khả thi. DNS do chủ domain tự cấu hình (xem dưới) |
 | D15 | Mã | **1 ký tự kiểm tra**, bảng 61 ký tự `0-9A-Za-y`, tổng trọng số mod 61 (không phải Luhn-62: đo thấy Luhn-62 để lọt đảo `0`↔`z`; chi tiết §2.3) |
 | D17 | Mặc định `apply` | **52 token + dấu comment `gennex-color <ver> · <mã>`**; tắt dấu bằng `--no-marker`, giới hạn 31 token bằng `--tokens shadcn` |
 | D18 | Xung đột | **bỏ qua + báo**, `--force` mới ghi đè |
@@ -347,3 +347,10 @@ Thứ tự triển khai (đã chốt): **5a** audit + mã + `toRegistryItem`; **
 - Tailwind v3/hsl, monorepo thật, Windows/CRLF: có trong danh sách test, chưa có fixture.
 - Số đo kích thước `postcss` (220 KB) lấy từ `npm view`, chưa đo trong gói đã dựng.
 - Mọi con số độ dài mã (§2.3) tính từ bố cục, chưa cài bộ mã hoá.
+
+### D14: việc DNS bạn tự làm (tôi không đổi DNS)
+1. **Vercel**: tạo project mới từ repo `kachitaro/gennex-color` (Root Directory `apps/site` khi 5d có), Settings → Domains → thêm `color.gen-nex.tech`. Vercel hiển thị bản ghi cần có (thường `CNAME color → cname.vercel-dns.com`, hoặc giá trị riêng của project).
+2. **Cloudflare** (DNS của `gen-nex.tech`): thêm bản ghi `CNAME`, tên `color`, đích đúng như Vercel hiển thị. Làm giống `portfolio` (kiểm bản ghi `portfolio` đang để Proxied hay DNS only rồi chọn y hệt; nếu để Proxied thì SSL/TLS của Cloudflare phải là **Full** hoặc **Full (strict)**, không dùng Flexible vì gây vòng lặp chuyển hướng).
+3. Chờ Vercel báo Valid Configuration và cấp chứng chỉ; kiểm: `dig +short color.gen-nex.tech`, `curl -I https://color.gen-nex.tech/`.
+4. Trước khi công bố URL trong README: `https://color.gen-nex.tech/r/theme-blue.json` phải trả JSON (`Content-Type: application/json`), và nên bật CORS `Access-Control-Allow-Origin: *` cho `/r/*` (đặt trong `vercel.json` ở 5d).
+Hiện `color.gen-nex.tech` chưa có bản ghi nào (đã tra: rỗng).
