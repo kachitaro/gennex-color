@@ -303,6 +303,8 @@ Các điểm cần nói rõ trong README/builder:
 
 Thứ tự triển khai (đã chốt): **5a** audit + mã + `toRegistryItem`; **5b** CLI `apply` + `registry-item`; **5c** publish npm 0.2.0 (cần bạn xác nhận trước khi publish); **5d** site (chờ D14).
 
+**5a đã làm (2026-11-05)**: `src/audit.ts` (bảng cặp xuất qua gói, `auditTheme`; `test/pairs.ts` chỉ còn là lớp mỏng), `src/code.ts` + `src/configs.ts` (mã `a` + cơ số 61 + 1 ký tự kiểm tra tổng trọng số mod 61; `ENGINE_EPOCH = 1`, `EPOCH_VERSIONS`; preset bung tường minh), `src/registry.ts` (`toRegistryItem`, `buildRegistry`: 24 item, 125 biến mỗi item, không `--radius`), `scripts/build-registry.ts` (`dist/registry.json`, `dist/r/*.json`), `test/codes.golden.json` (293 mục). Đã kiểm với CLI thật: `shadcn registry validate` báo hợp lệ 24 item; `add <item> --dry-run` báo 125 biến. Checksum vét cạn: ~790 000 phép thay 1 ký tự / đảo 2 ký tự kề trên 1200 mã, 0 lọt. Đột biến thử (đổi một neo `ANCHORS`) làm test golden đỏ.
+
 ## 8. Lộ trình đề xuất
 | Bước | Nội dung | Tiêu chí xong |
 |---|---|---|

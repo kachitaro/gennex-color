@@ -1,6 +1,6 @@
 // Builds docs/preview/gennex-color.js (iife bundle of src/) and docs/preview/theme.html (live theme preview).
 // Run: bun scripts/preview-theme.ts
-import { ALPHA_TEXT, PAIRS } from "../test/pairs";
+import { ALPHA_TEXT, AUDIT_PAIRS as PAIRS } from "../src/audit";
 
 const built = await Bun.build({ entrypoints: ["scripts/theme-entry.ts"], target: "browser", format: "iife", minify: true, outdir: "docs/preview", naming: "gennex-color.js" });
 if (!built.success) throw new Error(built.logs.join("\n"));
