@@ -1,5 +1,6 @@
 import { ENGINE_EPOCH, encodeConfig, type ThemeConfig } from "./code";
-import { devglowConfig, presetConfig } from "./configs";
+import { devglowConfig } from "./devglow";
+import { presetConfig } from "./presets";
 import { toOklchCss } from "./css";
 import { DEVGLOW_PRESETS } from "./devglow";
 import { PRESETS } from "./presets";

@@ -13,7 +13,8 @@
     "perf:example": "bun scripts/perf-example.ts"
   },
   "dependencies": {
-    "culori": "4.0.2"
+    "culori": "4.0.2",
+    "postcss": "8"
   },
   "devDependencies": {
     "@radix-ui/colors": "3.0.0",

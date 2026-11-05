@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { decodeCode, configToThemeOptions, normalizeConfig } from "../src/code";
-import { presetConfig, devglowConfig } from "../src/configs";
+import { devglowConfig } from "../src/devglow";
+import { presetConfig } from "../src/presets";
 import { toOklchCss, toCss } from "../src/css";
 import { SHADCN_TOKENS, buildRegistry, toRegistryItem } from "../src/registry";
 import { TOKEN_NAMES, buildTheme } from "../src/theme";

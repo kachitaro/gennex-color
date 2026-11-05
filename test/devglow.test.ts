@@ -125,10 +125,10 @@ describe("optional stronger dark neutral tint (cap for dark only)", () => {
     for (const n of NAMES) {
       const base = DEVGLOW_PRESETS[n].neutral as { hue: number; chroma: number }, p = devglowPreset(n, dark).neutral as { hue: number; chroma: number; chromaDark?: number };
       expect([n, p.hue, p.chroma]).toEqual([n, base.hue, base.chroma]);
-      expect(p.chromaDark!).toBeGreaterThanOrEqual(base.chroma);
-      expect(p.chromaDark!).toBeLessThanOrEqual(DEVGLOW_DARK_CHROMA_CAP);
+      expect(p.chromaDark ?? p.chroma).toBeGreaterThanOrEqual(base.chroma); // omitted = same as light
+      expect(p.chromaDark ?? p.chroma).toBeLessThanOrEqual(DEVGLOW_DARK_CHROMA_CAP);
     }
-    expect((devglowPreset("sage", dark).neutral as { chromaDark?: number }).chromaDark).toBe(0); // grey stays grey
+    expect((devglowPreset("sage", dark).neutral as { chromaDark?: number }).chromaDark ?? 0).toBe(0); // grey stays grey
     expect((devglowPreset("plum", dark).neutral as { chromaDark?: number }).chromaDark!).toBeGreaterThan(0.05); // raw 0.080 is cut to the cap
   });
   test("every preset with the stronger dark tint still passes every contrast gate (both primaryModes)", () => {

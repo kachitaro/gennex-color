@@ -2,7 +2,8 @@
 // Only run this together with a bump of ENGINE_EPOCH (or when adding entries). Run: bun scripts/gen-golden.ts
 import { createHash } from "node:crypto";
 import { ENGINE_EPOCH, configToThemeOptions, encodeConfig, normalizeConfig, type ThemeConfig } from "../src/code";
-import { devglowConfig, presetConfig } from "../src/configs";
+import { devglowConfig } from "../src/devglow";
+import { presetConfig } from "../src/presets";
 import { toCss } from "../src/css";
 import { CORE_HUES } from "../src/hues";
 import { DEVGLOW_PRESETS } from "../src/devglow";

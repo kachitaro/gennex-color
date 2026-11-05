@@ -1,6 +1,7 @@
 import { converter } from "culori";
 import snapshot from "../presets/devglow.snapshot.json";
 import { maxChroma } from "./color";
+import { configToThemeOptions, normalizeConfig, type ThemeConfig } from "./code";
 import type { NeutralRamp } from "./neutral";
 import type { ThemeOptions } from "./theme";
 
@@ -39,14 +40,25 @@ export const DEVGLOW_SEED_HUES: Record<string, number> = { sage: 150, ember: 40,
 const palettes = snapshot.palettes as Record<string, { colors: Record<string, string>; tagline: string }>;
 export const DEVGLOW_TAGLINES: Record<string, string> = Object.fromEntries(Object.entries(palettes).map(([n, p]) => [n, p.tagline]));
 
-/** One preset per devglow palette: hand-picked seed hue + neutral ramp and kappa from the palette data. Pinned commit: NOTICE. */
-export const DEVGLOW_PRESETS: Record<string, ThemeOptions> = Object.fromEntries(Object.keys(palettes).map((n) => [n, devglowPreset(n)]));
-
 /** Proposed dark cap (SPEC 12.6): 0.06 gets most of the fit to devglow's own surfaces; above it the gain is flat. Not the default. */
 export const DEVGLOW_DARK_CHROMA_CAP = 0.06;
 
-/** A devglow preset, optionally with a dark neutral that follows the palette's tint up to `darkChromaCap`. No options: same as `DEVGLOW_PRESETS[name]`. */
-export function devglowPreset(name: string, opts: { darkChromaCap?: number } = {}): ThemeOptions {
+/**
+ * A devglow preset as an explicit, quantized configuration: hand-picked seed hue, neutral ramp and kappa from the palette data.
+ * This is the single source of the preset: the static CSS, the DTCG file, the registry item and the share code all come from it,
+ * and the code stores these numbers (not the preset name), so re-syncing the devglow snapshot never changes an old code.
+ * `darkChromaCap` lets the dark neutral follow the palette's tint beyond the default 0.03 cap.
+ */
+export function devglowConfig(name: string, opts: { darkChromaCap?: number } = {}): ThemeConfig {
   const d = derivePreset(palettes[name].colors, opts);
-  return { hue: DEVGLOW_SEED_HUES[name], kappa: d.kappa, neutral: d.neutral };
+  const n = d.neutral;
+  return normalizeConfig({ hue: DEVGLOW_SEED_HUES[name], kappa: d.kappa, neutral: { hue: n.hue, chroma: n.chroma, chromaDark: n.chromaDark, canvasDark: n.canvas?.dark } });
 }
+
+/** `buildTheme` options of a devglow preset (from its configuration). */
+export function devglowPreset(name: string, opts: { darkChromaCap?: number } = {}): ThemeOptions {
+  return configToThemeOptions(devglowConfig(name, opts));
+}
+
+/** One preset per devglow palette. Pinned commit: NOTICE. */
+export const DEVGLOW_PRESETS: Record<string, ThemeOptions> = Object.fromEntries(Object.keys(palettes).map((n) => [n, devglowPreset(n)]));
