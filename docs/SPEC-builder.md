@@ -320,8 +320,8 @@ Các điểm cần nói rõ trong README/builder:
 
 ## 10. Chưa kiểm, giới hạn
 - Nội dung và control thật của `ui.shadcn.com/create`: không đọc được (client-render). Thiết kế §1 theo CLI và mô tả trong tài liệu, không bám UI đó.
-- `shadcn apply <preset>` trên file **đã có** `:root` của ta: chỉ thử trên file chưa có `:root` (E1, nối khối mới). Từ E3/E4 suy ra nó sẽ ghi đè tại chỗ nhưng chưa xác nhận.
-- Registry GitHub (`add kachitaro/gennex-color/<item>`) với item chỉ có `cssVars`; mẫu `{name}` trong namespace với tên có `/`; `registry validate` trên item không có `files`.
+- `shadcn apply <preset>` trên file đã có `:root` của ta: chưa thử riêng; `add` (E10–E12) cho thấy nó sửa `:root` đầu tiên và để nguyên phần còn lại, nên cùng giới hạn.
+- Registry GitHub: đã chạy với `#ref` (E13); chưa thử `registry validate` trên item không có `files`, và mẫu `{name}` trong namespace với tên có `/`.
 - E8 (`data:` URL) chỉ chạy 1 lần, không tài liệu.
 - Tailwind v3/hsl, monorepo thật, Windows/CRLF: có trong danh sách test, chưa có fixture.
 - Số đo kích thước `postcss` (220 KB) lấy từ `npm view`, chưa đo trong gói đã dựng.
