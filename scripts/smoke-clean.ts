@@ -1,6 +1,6 @@
 // Clean-install smoke: an empty temp directory, ONLY the packed tarball installed (dependencies come transitively), then
 // import the public API and run it under Node and Bun. Run: bun run smoke:clean
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -34,8 +34,20 @@ for (const installer of ["npm", "bun"] as const) {
     writeFileSync(join(dir, "check.mjs"), CHECK);
     run(installer === "npm" ? ["npm", "install", tgz, "--no-audit", "--no-fund", "--loglevel=error"] : ["bun", "add", tgz], dir);
     const installed = readdirSync(join(dir, "node_modules")).filter((n) => !n.startsWith(".")).sort();
-    if (installed.join() !== "culori,gennex-color") throw new Error(`${installer}: expected exactly culori + gennex-color, got ${installed.join()}`);
+    if (installed.join() !== "culori,gennex-color,nanoid,picocolors,postcss,source-map-js") throw new Error(`${installer}: expected exactly culori + gennex-color, got ${installed.join()}`);
     for (const rt of ["node", "bun"]) results.push(`${installer}-install/${rt}: ${run([rt, "check.mjs"], dir)}`);
+    // the CLI from the installed package: apply to a real shadcn init file, then --check must pass
+    const css = join(dir, "src/index.css");
+    mkdirSync(join(dir, "src"));
+    cpSync("test/fixtures/css/shadcn-init-default.css", css);
+    writeFileSync(join(dir, "components.json"), JSON.stringify({ tailwind: { config: "", css: "src/index.css" } }));
+    const bin = join(dir, "node_modules/.bin/gennex-color");
+    for (const rt of ["node", "bun"]) {
+      cpSync("test/fixtures/css/shadcn-init-default.css", css);
+      run([rt, bin, "apply", "--hue", "40", "--neutral", "warm"], dir);
+      run([rt, bin, "apply", "--hue", "40", "--neutral", "warm", "--check"], dir);
+      results.push(`${installer}-install/cli via ${rt}: ${run([rt, bin, "info"], dir).split("\n")[0]}`);
+    }
   } finally { rmSync(dir, { recursive: true, force: true }); }
 }
 console.log(results.join("\n"));

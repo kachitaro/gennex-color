@@ -9,7 +9,7 @@ Status: **not published to npm**. Design, measurements and decisions: [`docs/SPE
 
 ## Install
 
-Not on npm yet. Build a tarball and install that (dependencies come with it; `culori` is the only one):
+Not on npm yet. Build a tarball and install that (dependencies come with it: `culori`, and `postcss` for the CLI):
 
 ```sh
 bun install && bun run build && bun pm pack     # creates gennex-color-0.1.1.tgz
@@ -62,6 +62,55 @@ nameOfHue(40);         // { name: "coral", kind: "sub", core: "orange", offset: 
 | `primaryMode` | `"accessible"` or `"vivid"` (below) | `"accessible"` |
 
 Lower-level pieces: `generateScale({ hue, mode })` (12 steps + foreground), `generateNeutral`, `neutralAlpha`, `neutralBorder`.
+
+## Apply a theme to an existing shadcn project (CLI)
+
+```sh
+npx gennex-color apply --hue 40 --neutral warm        # edits the CSS file named in components.json
+npx gennex-color apply a2k6saH --dry-run              # a share code instead of flags; show the diff only
+npx gennex-color apply a2k6saH --check                # CI: exit 1 if the file differs or a color can be overridden
+```
+
+`apply` changes **only** the color variables it owns (the 52 token names of the table below, and their `--color-*: var(--*)`
+mappings in `@theme inline`). Everything else (`--radius`, fonts, your own variables, rules, comments, indentation, quotes,
+LF/CRLF, BOM, minified one-liners) stays byte for byte. It updates every `:root`/`.dark` rule that sets one of our variables
+(also inside `@layer base`), adds missing variables to the last one, and creates `:root`, `.dark` or `@theme inline` only if the
+file has none. It writes atomically (temp file + rename), never touches an unchanged file, and does no network access.
+A `/* gennex-color <version> · <code> */` comment records what was applied (`--no-marker` to skip it; `gennex-color info` reads it).
+
+It also tells you when your color can still lose: a rule it cannot edit that sets the same variable and wins by order,
+specificity or `@layer` is reported with a code and line number (and makes `--check` exit 1).
+
+| Code | Meaning |
+|---|---|
+| `W1` | a root-like rule (`html:root`, `:root.x`, `:root` in `@media`) also sets the variable and can win |
+| `W2` | another page-level rule (`body`, `.theme`, `[data-theme]`) also sets it and can win |
+| `W3` | an unlayered rule beats ours, which sit inside an `@layer` |
+| `W4` | `--color-<token>` in `@theme` points somewhere else: skipped (`--force` overwrites it) |
+| `W5` | the prebuilt `gennex-color/css/*.css` is imported too (refused unless `--force`) |
+
+Exit codes: `0` done or nothing to do, `1` `--check` found a difference or a warning, `2` error (nothing written: unbalanced CSS,
+unreadable/binary/non-UTF-8/over 2 MB/read-only file, a symlink leaving the project), `3` project not supported (Tailwind v3:
+`@tailwind` directives, hsl triplets, `tailwind.config` in `components.json`; an unsupported dark-mode strategy).
+Configuration flags: `--hue --kappa --neutral --page --primary --status --preset --devglow --dark-chroma-cap`, or a code
+(positional or `--code`, exclusive with the flags). Other commands: `encode`, `decode`, `info`, `registry-item`; `--help` lists all.
+
+### Share codes and shadcn registry items
+
+`encodeConfig(config)` / `decodeCode(code)` turn a theme configuration into a short code (`a` + 6-20 characters, one check
+character) and back; the same code always gives the same colors for one engine epoch (`ENGINE_EPOCH`, `EPOCH_VERSIONS`).
+`toRegistryItem(theme, meta)` / `buildRegistry()` give shadcn `registry:theme` items (the package ships 24 in `dist/r/`), and
+`gennex-color registry-item <code> > theme.json` prints one for any code, usable with `npx shadcn add ./theme.json`.
+`auditTheme(theme)` runs the same WCAG pair checks the tests use.
+
+**Prefer `gennex-color apply` over `shadcn add` for an existing project.** Measured with `shadcn@4.23.0`:
+
+1. With several `:root` rules, `shadcn add` edits only the first; a later `:root` still wins and your colors silently lose.
+2. A `:root` inside `@layer base` is not edited in place: a second `:root` is appended instead.
+3. It adds `@custom-variant dark` / `@theme inline` on its own and mixes LF and CRLF line endings.
+
+Also, `shadcn add owner/repo/item` answers "log in with `gh` / set `GH_TOKEN`" when the repo's default branch has no
+`registry.json`, even for a public repo. That message is misleading: use `owner/repo/item#<tag>` or a URL.
 
 ## Change the theme at runtime
 

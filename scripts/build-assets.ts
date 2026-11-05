@@ -1,4 +1,5 @@
 // Writes the prebuilt stylesheets and DTCG token files for every preset. Run after tsdown (it cleans dist/).
+import { chmodSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { toCss } from "../src/css";
 import { toDtcg } from "../src/dtcg";
@@ -15,3 +16,5 @@ for (const [name, opts] of Object.entries(ALL)) {
   await Bun.write(`dist/tokens/${name}.tokens.json`, JSON.stringify(toDtcg(theme, { description: `gennex-color preset: ${name}` }), null, 2) + "\n");
 }
 console.log(`wrote ${Object.keys(ALL).length} presets to dist/css and dist/tokens`);
+
+chmodSync("dist/bin.mjs", 0o755);

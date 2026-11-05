@@ -2,6 +2,8 @@
 // come transitively, nothing else is added), build that Vite + Tailwind v4 + shadcn app, and check the built CSS carries
 // our theme. Run: bun run smoke:example
 import { readFileSync, readdirSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { toOklchCss } from "../src/css";
+import { buildTheme } from "../src/theme";
 
 const run = (cmd: string[], cwd = ".") => {
   const r = Bun.spawnSync(cmd, { cwd, stdout: "pipe", stderr: "pipe" });
@@ -44,3 +46,21 @@ if ((builtVars.get("primary") ?? []).some((v) => Math.abs(v[0] - 0.205) < 1e-3 &
 const js = readFileSync(`${dir}/${readdirSync(dir).find((f) => f.endsWith(".js"))!}`, "utf8");
 if (!js.includes("data-gennex-theme-style")) throw new Error("applyThemeToRoot is not in the built app");
 console.log(`example build ok: ${decls(root).length + decls(dark).length} theme variables present, utilities generated`);
+
+// The CLI path: a real `shadcn init` stylesheet in the same app, edited by the installed `gennex-color` binary, built by real Tailwind v4.
+const idx = `${ex}/src/index.css`, original = readFileSync(idx, "utf8");
+try {
+  writeFileSync(idx, readFileSync("test/fixtures/css/shadcn-init-default.css", "utf8").replace("@fontsource-variable/inter", "@fontsource-variable/geist"));
+  run([`node_modules/.bin/gennex-color`, "apply", "--hue", "40", "--neutral", "warm"], ex);
+  run([`node_modules/.bin/gennex-color`, "apply", "--hue", "40", "--neutral", "warm", "--check"], ex);
+  run(["bun", "run", "build"], ex);
+  const out = `${ex}/dist/assets`, built = readFileSync(`${out}/${readdirSync(out).find((f) => f.endsWith(".css"))!}`, "utf8");
+  const want = buildTheme({ hue: 40, neutral: "warm" });
+  for (const [mode, tok] of [["light", "primary"], ["light", "background"], ["dark", "primary"], ["dark", "card"]] as const) {
+    const [l, c, h] = parse(toOklchCss(want[mode][tok]).replace(/^oklch\(|\)$/g, ""));
+    const got = [...built.matchAll(new RegExp(`--${tok}:oklch\\(([^)]*)\\)`, "g"))].map((m) => parse(m[1]));
+    if (!got.some((g) => Math.abs(g[0] - l) < 1e-3 && Math.abs(g[1] - c) < 1e-3)) throw new Error(`CLI build: --${tok} (${mode}) is not ${l},${c},${h} in the built CSS`);
+  }
+  for (const needle of ["--radius:", ".bg-primary", ".text-muted-foreground"]) if (!built.includes(needle)) throw new Error(`CLI build: ${needle} missing`);
+  console.log("CLI build ok: apply on a shadcn init file -> --check 0 -> vite build contains the theme, radius kept");
+} finally { writeFileSync(idx, original); }

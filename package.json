@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "culori": "4.0.2",
-    "postcss": "8"
+    "postcss": "8.5.32"
   },
   "devDependencies": {
     "@radix-ui/colors": "3.0.0",
@@ -43,5 +43,8 @@
     "NOTICE",
     "LICENSE"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "bin": {
+    "gennex-color": "./dist/bin.mjs"
+  }
 }
