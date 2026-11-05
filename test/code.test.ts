@@ -187,3 +187,12 @@ describe("golden codes (frozen: change the algorithm => bump ENGINE_EPOCH and re
     expect(bad).toEqual([]);
   });
 });
+
+test("the current epoch starts at a version that is not newer than this package", async () => {
+  const { version } = await Bun.file("package.json").json();
+  const { EPOCH_VERSIONS, ENGINE_EPOCH } = await import("../src/code");
+  const v = (s: string) => s.split(".").map(Number);
+  const [a, b] = [v(EPOCH_VERSIONS[ENGINE_EPOCH].first), v(version)];
+  expect(a[0] * 1e6 + a[1] * 1e3 + a[2]).toBeLessThanOrEqual(b[0] * 1e6 + b[1] * 1e3 + b[2]);
+  expect(EPOCH_VERSIONS[ENGINE_EPOCH].last).toBeNull();
+});

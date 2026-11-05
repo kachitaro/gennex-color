@@ -1,6 +1,6 @@
 {
   "name": "gennex-color",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsdown && bun scripts/build-assets.ts && bun scripts/build-registry.ts",
     "smoke": "bun run build && bun scripts/smoke.ts && tsc --noEmit -p tsconfig.smoke.json",
+    "integration:shadcn": "bun scripts/integration-shadcn.ts",
     "smoke:example": "bun scripts/smoke-example.ts",
     "smoke:clean": "bun scripts/smoke-clean.ts",
     "perf:example": "bun scripts/perf-example.ts"
@@ -35,11 +36,11 @@
     "./css/*.css": "./dist/css/*.css",
     "./tokens/*.json": "./dist/tokens/*.json",
     "./package.json": "./package.json",
-    "./r/*.json": "./dist/r/*.json",
-    "./registry.json": "./dist/registry.json"
+    "./r/*.json": "./dist/r/*.json"
   },
   "files": [
     "dist",
+    "!dist/registry.json",
     "NOTICE",
     "LICENSE"
   ],

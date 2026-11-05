@@ -1,19 +1,19 @@
 # gennex-color
 
-`gennex-color@0.1.1`: a color system that pairs Radix-style 12-step scales with shadcn/ui semantic tokens. For any brand hue
+`gennex-color@0.2.0`: a color system that pairs Radix-style 12-step scales with shadcn/ui semantic tokens. For any brand hue
 (0-360), light and dark, every text/surface pair of the shadcn token set and of the shadcn `radix-nova` components
 (including their translucent forms such as `bg-destructive/10` or `hover:bg-primary/80`) is checked against WCAG 2.x in tests.
 
-Status: **not published to npm**. Design, measurements and decisions: [`docs/SPEC.md`](docs/SPEC.md). Live preview:
+Status: **pre-release**, published on npm under the `next` tag (`npm i gennex-color@next`; `npx gennex-color@next apply ...`). Design, measurements and decisions: [`docs/SPEC.md`](docs/SPEC.md). Live preview:
 `docs/preview/theme.html` (open the file in a browser).
 
 ## Install
 
-Not on npm yet. Build a tarball and install that (dependencies come with it: `culori`, and `postcss` for the CLI):
+`npm i gennex-color@next` (dependencies: `culori`, and `postcss` for the CLI). To try the repo build instead, install a tarball:
 
 ```sh
-bun install && bun run build && bun pm pack     # creates gennex-color-0.1.1.tgz
-npm install ./gennex-color-0.1.1.tgz            # or: bun add ./gennex-color-0.1.1.tgz
+bun install && bun run build && bun pm pack     # creates gennex-color-0.2.0.tgz
+npm install ./gennex-color-0.2.0.tgz            # or: bun add ./gennex-color-0.2.0.tgz
 ```
 
 Tested with Node 22 and Bun 1.4 (ESM only). `bun run smoke:clean` proves it from an empty directory.
