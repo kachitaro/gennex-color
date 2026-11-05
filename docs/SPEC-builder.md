@@ -32,6 +32,11 @@
 | E7 | `init --preset …` rồi `add ./item.json` | item ghi đè màu, **giữ** font (`Roboto Variable`), `--radius`, icon của preset |
 | E8 | `add "data:application/json;base64,…"` | CLI chấp nhận (dry-run đúng 6 biến). **Không có trong tài liệu**, chỉ thử 1 lần: không dựa vào |
 | E9 | file do `init` sinh | thụt dòng 4 dấu cách, nháy đơn trong font; công cụ sửa file phải giữ phong cách của file |
+| E10 | `add <file cục bộ>` (chỉ `cssVars`) trên file đã có `:root` do **người dùng** viết: `:root` nằm trong `@layer base` (tab, comment chứa `--primary: red; }`, biến lạ, chuỗi chứa `;}`) | chạy; **không sửa** `:root` trong `@layer base`, **nối** `:root`/`.dark` mới ở cấp cao nhất (thắng nhờ unlayered) và thêm `--color-*` vào `@theme inline` có sẵn; mọi byte cũ giữ nguyên |
+| E11 | như E10, file có **hai** `:root` rời nhau + CSS minify một dòng | chạy; chỉ sửa `:root` **đầu tiên**; `:root` thứ hai (`--primary:#000;--ring:#999`) **còn nguyên và nằm sau nên thắng**: màu của ta thua **mà không báo lỗi**. Đồng thời tự chèn `@custom-variant dark (...)` và xuống dòng vào file minify |
+| E12 | như E10, file **CRLF + BOM** | chạy, giữ BOM, nhưng các dòng đầu và dòng chèn thành **LF**: file thành CRLF/LF lẫn lộn; tự thêm `@custom-variant dark` và khối `@theme inline` |
+| E13 | `add kachitaro/gennex-color/theme-x#<nhánh>` (GitHub, `registry.json` ở gốc, item chỉ `cssVars`, không `files`) | **chạy** (dry-run 9 biến, add thật ghi 17 dòng). Không gắn `#ref` thì dùng `HEAD`; khi nhánh mặc định chưa có `registry.json` báo lỗi gợi ý "đăng nhập `gh`/`GH_TOKEN`" dù repo công khai (thông điệp gây hiểu nhầm). Nhánh thử đã xoá |
+| E14 | `shadcn add` offline | **chưa kiểm** |
 
 ---
 
@@ -123,7 +128,7 @@ Chuỗi bit, MSB trước, bọc một bit sentinel `1` ở đầu (để không
 
 Quy tắc chuẩn tắc: mặc định của v1 bị **đóng băng theo phiên bản định dạng** (κ 0.85, neutral `neutral`, page 1, accessible, hue trạng thái 25/156/80/255); đổi mặc định = định dạng mới. Mọi số được làm tròn theo bước của trường trước khi mã hoá; `decode(encode(c)) = normalize(c)`; giải mã xong **mã hoá lại và so khớp** (từ chối mã không chuẩn tắc: padding thừa, cờ bật mà giá trị bằng mặc định). Preset devglow và preset hue lõi được **bung thành giá trị tường minh** lúc mã hoá (hue, κ, neutral tuỳ chỉnh), nên đồng bộ lại snapshot devglow không làm đổi mã cũ.
 
-Không có checksum (tốn 1 ký tự; kiểm khoảng giá trị + chuẩn tắc đã bắt phần lớn lỗi gõ). Chốt ở D15.
+**Checksum (D15 đã chốt: có, 1 ký tự)**: ký tự cuối = base62 của `(Σ_{i=1..n} i · d_i) mod 62`, `d_i` là chữ số base62 thứ i của phần payload (không tính ký tự phiên bản). Bắt mọi lỗi gõ sai một ký tự và mọi đảo chỗ hai ký tự kề khác nhau. Độ dài thành 7 (chỉ hue) đến 22 (đầy đủ). Mã sai checksum bị từ chối với thông điệp riêng, không giải mã.
 
 ### 2.4 URL và cờ
 - Builder: `https://<host>/?c=<code>` (query, như `?preset=` của shadcn; chạy trên host tĩnh). Builder cũng đọc dạng đọc được `?hue=40&neutral=warm&primary=vivid` (và luôn ghi lại thành `?c=`).
@@ -300,21 +305,24 @@ Các điểm cần nói rõ trong README/builder:
 
 ---
 
-## 9. Quyết định cần bạn chốt
+## 9. Quyết định
 
-| # | Quyết định | Phương án | Khuyến nghị |
-|---|---|---|---|
-| D12 | Chỗ đặt site | **A. `apps/site` trong repo** / B. repo riêng | A |
-| D13 | Stack + preview | **Vite + React + Tailwind v4 + shadcn `radix-nova`; preview bằng 2 iframe** / preview trong cùng trang (portal Radix hỏng theme) | iframe |
-| D14 | Host + domain (URL registry là API công khai, không đổi được về sau) | GitHub Pages `kachitaro.github.io/gennex-color` / Cloudflare Pages / Vercel / domain riêng | tuỳ bạn; nếu muốn có hàm biên sau này chọn Cloudflare Pages hoặc Vercel ngay từ đầu |
-| D15 | Mã: bố cục §2.3 (epoch 3 bit, base62, tự chứa, mặc định đóng băng), **có checksum không** | không checksum (6–21 ký tự) / thêm 1 ký tự checksum | không checksum |
-| D16 | Sửa CSS | **`postcss` làm dependency (chỉ đọc vị trí) + tự ghép chuỗi** / bộ quét tự viết / tách `gennex-color-cli` | postcss, cùng package |
-| D17 | `apply` mặc định | **52 token + dấu comment `gennex-color <ver> · <mã>`** / chỉ 31 token shadcn / không dấu | 52 + dấu; `--tokens shadcn`, `--no-marker` để tắt |
-| D18 | Xung đột (`--color-primary: var(--brand)`…) | **bỏ qua + báo, `--force` mới ghi đè** / luôn ghi đè | bỏ qua + báo |
-| D19 | Theme tuỳ ý qua URL registry | **không server ở v1 (CLI + tải JSON)** / hàm biên `/r/c/<mã>.json` ngay | không server ở v1 |
-| D20 | Policy epoch | **đổi đầu ra của cấu hình có sẵn ⇒ tăng epoch ⇒ minor/major; không giữ thuật toán cũ** / giữ nhiều epoch song song | tăng epoch, không giữ |
-| D21 | Publish npm (CLI chỉ `npx` được sau đó) | publish `gennex-color` (tên còn trống) trước 5b / sau 5c | trước 5c, để thử `npx` thật |
-| D22 | Phạm vi hỗ trợ project | Tailwind v4 + `components.json` + `.dark` (v1) / thêm Tailwind v3 (hsl) | chỉ v4; v3 thoát 3 có hướng dẫn |
+Đã chốt 2026-11-05:
+
+| # | Quyết định | Chốt |
+|---|---|---|
+| D12 | Chỗ đặt site | **`apps/site` trong repo này** (bun workspaces) |
+| D13 | Preview | **2 iframe** (light/dark), cấu hình qua `postMessage` |
+| D14 | Host | **Domain riêng**. **Còn thiếu: tên domain và nhà cung cấp hosting** (cần trước bước 5d; URL registry không đổi được về sau). Nếu muốn hàm biên sau này, host phải chạy được function |
+| D15 | Mã | **Thêm 1 ký tự checksum** (cuối mã; công thức ở §2.3) |
+| D17 | Mặc định `apply` | **52 token + dấu comment `gennex-color <ver> · <mã>`**; tắt dấu bằng `--no-marker`, giới hạn 31 token bằng `--tokens shadcn` |
+| D18 | Xung đột | **bỏ qua + báo**, `--force` mới ghi đè |
+| D19 | Theme tuỳ ý qua URL registry | **không server ở v1** |
+| D20 | Epoch | **đổi đầu ra của cấu hình có sẵn ⇒ tăng `ENGINE_EPOCH` ⇒ minor (trước 1.0) / major (từ 1.0); không giữ thuật toán cũ.** Gặp mã epoch cũ: CLI/builder **cảnh báo kèm lệnh chạy đúng phiên bản**: `npx gennex-color@<v> apply <mã>`. Bảng `EPOCH_VERSIONS` (epoch → phiên bản cuối còn tạo ra màu đó) nằm trong gói và README. Hệ quả: **không `npm unpublish` bất kỳ phiên bản nào** |
+| D21 | npm | **Publish trước** (trước 5c) |
+| D22 | Phạm vi project | **chỉ Tailwind v4**; v3 thoát mã 3 kèm hướng dẫn |
+
+**Chưa chốt — D16 (cách sửa CSS)**: xem thử nghiệm E10–E13 và đề xuất trong báo cáo; giữ khuyến nghị cũ (`postcss` đọc vị trí + tự ghép chuỗi, cùng package) cho tới khi bạn quyết.
 
 ---
 
