@@ -1,0 +1,11 @@
+{
+  "buildCommand": "bun run build && rm -rf public && mkdir public && cp -r dist/r public/r",
+  "outputDirectory": "public",
+  "headers": [
+    { "source": "/r/(.*)", "headers": [
+      { "key": "Access-Control-Allow-Origin", "value": "*" },
+      { "key": "Content-Type", "value": "application/json; charset=utf-8" },
+      { "key": "Cache-Control", "value": "public, max-age=300" }
+    ] }
+  ]
+}
