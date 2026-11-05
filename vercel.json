@@ -1,5 +1,5 @@
 {
-  "buildCommand": "bun run build && rm -rf public && mkdir public && cp -r dist/r public/r",
+  "buildCommand": "bun run build && bun scripts/build-public.ts",
   "outputDirectory": "public",
   "headers": [
     { "source": "/r/(.*)", "headers": [
