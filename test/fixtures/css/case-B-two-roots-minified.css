@@ -1,0 +1,1 @@
+@import "tailwindcss";:root{--background:#fff;--x:1}.foo{a:b}:root{--primary:#000;--ring:#999}.dark{--background:#000}@theme inline{--color-primary:var(--brand)}

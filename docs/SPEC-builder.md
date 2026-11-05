@@ -128,7 +128,7 @@ Chuỗi bit, MSB trước, bọc một bit sentinel `1` ở đầu (để không
 
 Quy tắc chuẩn tắc: mặc định của v1 bị **đóng băng theo phiên bản định dạng** (κ 0.85, neutral `neutral`, page 1, accessible, hue trạng thái 25/156/80/255); đổi mặc định = định dạng mới. Mọi số được làm tròn theo bước của trường trước khi mã hoá; `decode(encode(c)) = normalize(c)`; giải mã xong **mã hoá lại và so khớp** (từ chối mã không chuẩn tắc: padding thừa, cờ bật mà giá trị bằng mặc định). Preset devglow và preset hue lõi được **bung thành giá trị tường minh** lúc mã hoá (hue, κ, neutral tuỳ chỉnh), nên đồng bộ lại snapshot devglow không làm đổi mã cũ.
 
-**Checksum (D15 đã chốt: có, 1 ký tự)**: ký tự cuối = base62 của `(Σ_{i=1..n} i · d_i) mod 62`, `d_i` là chữ số base62 thứ i của phần payload (không tính ký tự phiên bản). Bắt mọi lỗi gõ sai một ký tự và mọi đảo chỗ hai ký tự kề khác nhau. Độ dài thành 7 (chỉ hue) đến 22 (đầy đủ). Mã sai checksum bị từ chối với thông điệp riêng, không giải mã.
+**Checksum (D15: 1 ký tự) — sửa lại sau khi đo.** Công thức đầu (`Σ i·dᵢ mod 62`) sai: 62 không nguyên tố, nên sai một ký tự với Δ = 31 ở vị trí chẵn lọt qua. Luhn mod N (N = 62) đã đo thử (2000 mã ngẫu nhiên 20 chữ số, vét cạn mọi thay 1 ký tự và mọi đảo 2 ký tự kề): **0 lọt với thay 1 ký tự, nhưng đảo cặp chữ số `0` và `61` (`0`↔`z`) lọt** (18 lần, đúng cặp đó: cùng họ lỗi `09`↔`90` của Luhn thập phân, vì N chẵn). Muốn yêu cầu "mọi đảo 2 ký tự kề bị bắt" thì không dùng Luhn-62. **Chốt dùng tổng có trọng số theo modulo nguyên tố 61**: bảng chữ cái của mã là 61 ký tự `0-9A-Za-y` (bỏ `z`; vẫn bấm đúp chọn được, không có `-_`), payload là số cơ số 61, phiên bản là ký tự đầu (`a` = v1). Ký tự kiểm tra `c` (cùng bảng) chọn sao cho `Σ_{i=1..n+1} i · d_i ≡ 0 (mod 61)` với `d_{n+1} = c` và `i` đếm từ **1** ở ký tự đầu của payload (`c = −(Σ_{i≤n} i·dᵢ) · (n+1)⁻¹ mod 61`; n ≤ 60 nên mọi trọng số khác 0 mod 61). Vì 61 nguyên tố và mọi chữ số nằm trong 0..60: **mọi thay 1 ký tự bị bắt** (Δ·i ≢ 0) và **mọi đảo 2 ký tự kề khác nhau bị bắt** (Δ·1 ≢ 0), kể cả ký tự đầu và chính ký tự kiểm tra; chứng minh bằng test vét cạn (§6A). Độ dài: 117 bit → 20 chữ số cơ số 61 (+1 phiên bản +1 kiểm tra) = **22**; chỉ hue (25 bit + sentinel) = 5 + 2 = **7**. Mã sai kiểm tra bị từ chối với thông điệp riêng, không giải mã. (Nếu bạn vẫn muốn đúng Luhn-62, nó nhận chấp nhận rủi ro đảo `0z`: nói để tôi đổi.)
 
 ### 2.4 URL và cờ
 - Builder: `https://<host>/?c=<code>` (query, như `?preset=` của shadcn; chạy trên host tĩnh). Builder cũng đọc dạng đọc được `?hue=40&neutral=warm&primary=vivid` (và luôn ghi lại thành `?c=`).
@@ -258,9 +258,9 @@ Các điểm cần nói rõ trong README/builder:
 
 ## 6. Danh sách test cho CLI (ưu tiên: không phá file CSS của người dùng)
 
-**A. Mã (thuần)** — round-trip lưới dày; chuẩn tắc (một cấu hình một mã; cờ bật mà bằng mặc định bị từ chối); golden §2.5; lỗi: ký tự ngoài base62, rỗng, quá ngắn/dài, phiên bản lạ, ngoài khoảng, epoch lạ, thừa bit; cờ ≡ mã (`--hue 40 --neutral warm` ra đúng mã của `--code`); preset bung tường minh (đổi snapshot devglow không đổi mã).
+**A. Mã (thuần)** — round-trip lưới dày; chuẩn tắc (một cấu hình một mã; cờ bật mà bằng mặc định bị từ chối); golden §2.5; lỗi: ký tự ngoài bảng 61 ký tự (kể cả `z`, `-`, `_`), rỗng, quá ngắn/dài, phiên bản lạ, ngoài khoảng, epoch lạ, thừa bit, **sai kiểm tra**; cờ ≡ mã (`--hue 40 --neutral warm` ra đúng mã của `--code`); preset bung tường minh (đổi snapshot devglow không đổi mã). **Checksum, vét cạn**: trên ≥ 1000 mã ngẫu nhiên (độ dài 7–22, gồm các mã hợp lệ thật từ `encodeConfig`), **mọi** phép thay 1 ký tự (mọi vị trí × 60 giá trị khác, kể cả ký tự phiên bản nếu nằm trong phạm vi kiểm, và ký tự kiểm tra) và **mọi** phép đảo hai ký tự kề khác nhau đều phải bị từ chối; thêm một test tham chiếu chứng minh Luhn-62 để lọt `0`↔`z` (để không ai "đơn giản hoá" lại).
 
-**B. Bộ sửa CSS (thuần, chuỗi → chuỗi)**, với kho fixture:
+**B. Bộ sửa CSS (thuần, chuỗi → chuỗi)**, với kho fixture (đã có trong repo: `test/fixtures/css/case-A-layer-base.css`, `case-B-two-roots-minified.css`, `case-C-crlf-bom.css`, `item-theme-x.json`: ba ca đã đo với `shadcn add`, E10–E12):
 1. **File thật do `shadcn init` sinh** (≥ 3 preset khác nhau, commit nguyên văn; có script sinh lại và job định kỳ để bắt thay đổi định dạng của shadcn).
 2. Thiếu từng phần: không có sidebar/chart; không có `.dark`; không có `@theme inline`; không có `:root`; file chỉ có `@import`; file rỗng.
 3. Nhiều khối: `:root` hai lần; `:root` trong `@layer base`; `:root, :host`; `.dark` lồng trong `@media`; `html.dark`.
@@ -271,6 +271,13 @@ Các điểm cần nói rõ trong README/builder:
 8. Xung đột: `--color-primary: var(--brand)`, `@theme` không inline, giá trị hsl/triplet (Tailwind v3) → bỏ qua có báo cáo / thoát 3, **không ghi một phần**.
 9. Lỗi: dấu ngoặc không cân bằng, file nhị phân, UTF-16, > 2 MB → thoát 2, file không đổi (so hash và mtime).
 10. **Fuzz bảo toàn**: kho CSS thật (các file CSS trong registry shadcn, mẫu Tailwind, vài file Bootstrap/Normalize) + ngẫu nhiên chèn khối sở hữu: kết quả hoặc ghép đúng (bất biến 6a) hoặc dừng không ghi.
+11. **Phát hiện "màu của ta có thể thua" (`apply` phải báo, không im lặng)** — mỗi ca có test riêng, kiểm đúng mã cảnh báo và vị trí (dòng) trong báo cáo:
+    - **W1 nhiều `:root` / `.dark`**: sau khi áp, còn rule `:root`/`.dark` **khác** (cùng cấp, đứng sau) định nghĩa lại biến của ta → báo; (đo: case B, `:root{--primary:#000}` thứ hai thắng). `apply` sửa **mọi** rule sở hữu biến đó (kể cả rule sau), nếu không an toàn thì báo và bỏ qua.
+    - **W2 rule khác định nghĩa lại biến của ta nằm sau**: bất kỳ rule nào (`html`, `body`, `:root.x`, `[data-theme]`, `.dark` lồng, `@media`, `@supports`) khai báo `--<token>` của ta sau vị trí ta ghi, với độ đặc hiệu ≥ → báo kèm bộ chọn.
+    - **W3 biến nằm trong `@layer`**: `:root` trong `@layer base` (case A) — rule unlayered thắng rule layered nên sửa tại chỗ **không đủ** nếu có rule unlayered khác; ta chọn sửa tại chỗ trong layer nếu mọi định nghĩa của biến đều trong cùng layer, ngược lại báo. Rule ngoài layer đè rule trong layer khi người dùng đặt `@layer` có thứ tự ngược → báo.
+    - **W4 `@theme` không inline hoặc `--color-<token>` trỏ chỗ khác** (D18): bỏ qua + báo.
+    - **W5 `@import` CSS dựng sẵn của ta** đã có: từ chối (trừ `--force`).
+    Mỗi cảnh báo có mã ổn định (`W1`…), nằm trong `--json`, và **làm `--check` thoát 1**. Test chứng minh bằng CSS thật: build bằng Tailwind v4 trên fixture rồi so giá trị biến **hiệu lực** (đọc `getComputedStyle` trong Chrome headless) với giá trị mong muốn; không có cảnh báo ⇔ giá trị hiệu lực đúng (cả hai chiều).
 
 **C. CLI (chạy bản dựng thật trên bản sao trong thư mục tạm)**
 - `--dry-run`: không ghi (hash + mtime), in diff chỉ gồm dòng bị chạm, thoát 0; `--check`: thoát 1/0 đúng; `--print`; không đổi gì → "đã cập nhật", không chạm mtime.
@@ -282,7 +289,7 @@ Các điểm cần nói rõ trong README/builder:
 
 **D. Tích hợp với shadcn (job riêng, cần mạng)**: `shadcn init --preset … ` → `gennex-color apply` → `vite build` (Tailwind v4 thật) → CSS build chứa đủ giá trị, font/radius của preset còn nguyên (E7); thử thêm `shadcn add button` sau apply (không phá màu); `shadcn apply <preset> --only font` giữ màu; `shadcn apply <preset>` ghi đè màu → `gennex-color apply --check` thoát 1. Bắt buộc ghim `shadcn@4.23.0` và chạy thêm với `@latest` hằng tuần để sớm thấy đổi định dạng.
 
-**E. Registry item**: hợp lệ theo schema (`shadcn registry validate`); `cssVars` khớp `toCss` từng giá trị; không có `--radius`; xác định; `shadcn add ./item --dry-run` đúng số biến (E5); item `@gennex/…` qua namespace cục bộ.
+**E. Registry item và kênh phụ `shadcn add` (D16)**: hợp lệ theo schema (`shadcn registry validate`); `cssVars` khớp `toCss` từng giá trị; không có `--radius`; xác định; `shadcn add ./item --dry-run` đúng số biến (E5); item `@gennex/…` qua namespace cục bộ; `gennex-color registry-item <mã>` ≡ item của builder cho cùng mã. README (và `docs/`) ghi **3 giới hạn đã đo** của `shadcn add` (test đọc README kiểm có đủ ba): (1) nhiều `:root`: chỉ sửa `:root` đầu, rule sau thắng và màu của ta thua không báo (E11); (2) `:root` trong `@layer base` không được sửa tại chỗ mà bị nối thêm (E10); (3) tự thêm `@custom-variant dark`/`@theme inline` và làm lẫn LF/CRLF (E11–E12). Và lưu ý **thông điệp sai của `shadcn add owner/repo/item`**: khi nhánh mặc định chưa có `registry.json` nó báo "đăng nhập `gh` / `GH_TOKEN`" dù repo công khai (E13) → dùng `#<tag>` hoặc URL.
 
 **F. Site/builder**: round-trip trạng thái ↔ URL; mọi tổ hợp điều khiển ra mã hợp lệ; iframe nhận cấu hình và render (một Playwright/headless Chrome smoke); bảng audit của builder = bảng của test (cùng `src/audit.ts`); build tĩnh không gọi mạng.
 
@@ -293,6 +300,8 @@ Các điểm cần nói rõ trong README/builder:
 2. `src/code.ts`: `encodeConfig`/`decodeConfig`, `ENGINE_EPOCH`, kiểu `ThemeConfig` (cấu hình tường minh, gồm preset đã bung), `configToThemeOptions`.
 3. `src/registry.ts`: `toRegistryItem(theme, meta)`; `scripts/build-registry.ts` sinh `registry.json` + `r/*.json`.
 4. Test golden mã + hash theme.
+
+Thứ tự triển khai (đã chốt): **5a** audit + mã + `toRegistryItem`; **5b** CLI `apply` + `registry-item`; **5c** publish npm 0.2.0 (cần bạn xác nhận trước khi publish); **5d** site (chờ D14).
 
 ## 8. Lộ trình đề xuất
 | Bước | Nội dung | Tiêu chí xong |
@@ -313,8 +322,8 @@ Các điểm cần nói rõ trong README/builder:
 |---|---|---|
 | D12 | Chỗ đặt site | **`apps/site` trong repo này** (bun workspaces) |
 | D13 | Preview | **2 iframe** (light/dark), cấu hình qua `postMessage` |
-| D14 | Host | **Domain riêng**. **Còn thiếu: tên domain và nhà cung cấp hosting** (cần trước bước 5d; URL registry không đổi được về sau). Nếu muốn hàm biên sau này, host phải chạy được function |
-| D15 | Mã | **Thêm 1 ký tự checksum** (cuối mã; công thức ở §2.3) |
+| D14 | Host | **Domain riêng trên Cloudflare Pages**. **Còn thiếu: tên domain** (cần trước bước 5d; URL registry không đổi được về sau). Nếu muốn hàm biên sau này, host phải chạy được function |
+| D15 | Mã | **1 ký tự kiểm tra**, bảng 61 ký tự `0-9A-Za-y`, tổng trọng số mod 61 (không phải Luhn-62: đo thấy Luhn-62 để lọt đảo `0`↔`z`; chi tiết §2.3) |
 | D17 | Mặc định `apply` | **52 token + dấu comment `gennex-color <ver> · <mã>`**; tắt dấu bằng `--no-marker`, giới hạn 31 token bằng `--tokens shadcn` |
 | D18 | Xung đột | **bỏ qua + báo**, `--force` mới ghi đè |
 | D19 | Theme tuỳ ý qua URL registry | **không server ở v1** |
@@ -322,7 +331,7 @@ Các điểm cần nói rõ trong README/builder:
 | D21 | npm | **Publish trước** (trước 5c) |
 | D22 | Phạm vi project | **chỉ Tailwind v4**; v3 thoát mã 3 kèm hướng dẫn |
 
-**Chưa chốt — D16 (cách sửa CSS)**: xem thử nghiệm E10–E13 và đề xuất trong báo cáo; giữ khuyến nghị cũ (`postcss` đọc vị trí + tự ghép chuỗi, cùng package) cho tới khi bạn quyết.
+| D16 | Sửa CSS | **Bộ sửa riêng**: `postcss` chỉ lấy vị trí, tự ghép chuỗi, cùng package. Kênh phụ: `registry-item <mã>` + 24 item tĩnh; README ghi 3 giới hạn của `shadcn add` và lỗi `gh`/`GH_TOKEN` gây hiểu nhầm (§6E). `apply` phải phát hiện và báo mọi trường hợp màu có thể thua (§6B.11) |
 
 ---
 
